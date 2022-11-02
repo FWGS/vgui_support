@@ -13,9 +13,13 @@ def options(opt):
 	grp = opt.add_option_group('VGUI options')
 
 	vgui_dev_path = os.path.join(opt.path.path_from(opt.root), 'vgui-dev')
+	vgui2_dev_path = os.path.join(opt.path.path_from(opt.root), 'vgui2-dev')
 
 	grp.add_option('--vgui', action = 'store', dest = 'VGUI_DEV', default=vgui_dev_path,
 		help = 'path to vgui-dev repo [default: %default]')
+
+	grp.add_option('--vgui2', action = 'store', dest = 'VGUI2_DEV', default=vgui2_dev_path,
+		help = 'path to vgui2-dev repo [default: %default]')
 
 	grp.add_option('--disable-vgui', action = 'store_true', dest = 'NO_VGUI', default = False,
 		help = 'disable vgui_support [default: %default]')
@@ -63,6 +67,7 @@ def configure(conf):
 
 	conf.start_msg('Configuring VGUI by provided path')
 	vgui_dev = conf.options.VGUI_DEV
+	vgui2_dev = conf.options.VGUI2_DEV
 
 	if conf.env.DEST_OS == 'win32':
 		conf.env.LIB_VGUI = ['vgui']
@@ -76,7 +81,7 @@ def configure(conf):
 			conf.env.LDFLAGS_VGUI = [os.path.join(libpath, 'vgui.dylib')]
 		else:
 			conf.fatal('vgui is not supported on this OS: ' + conf.env.DEST_OS)
-	conf.env.INCLUDES_VGUI = [os.path.abspath(os.path.join(vgui_dev, 'include'))]
+	conf.env.INCLUDES_VGUI = [os.path.abspath(os.path.join(vgui_dev, 'include')), os.path.abspath(os.path.join(vgui2_dev, 'include'))]
 
 	conf.env.HAVE_VGUI = 1
 	conf.end_msg('yes: {0}, {1}, {2}'.format(conf.env.LIB_VGUI, conf.env.LIBPATH_VGUI, conf.env.INCLUDES_VGUI))
@@ -100,7 +105,7 @@ def build(bld):
 	if bld.env.NO_VGUI:
 		return
 
-	libs = [ 'sdk_includes' ]
+	libs = [ 'public', 'filesystem_includes' ]
 
 	# basic build: dedicated only, no dependencies
 	if bld.env.DEST_OS != 'win32':
@@ -109,6 +114,9 @@ def build(bld):
 	libs.append('VGUI')
 
 	source = bld.path.ant_glob(['*.cpp'])
+	
+	# FIXME: Glob using VGUI2_DEV instead
+	source += bld.path.ant_glob(['vgui2-dev/src/*.cpp'])
 
 	includes = [ '.' ]
 

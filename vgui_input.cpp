@@ -27,9 +27,21 @@ from your version.
 
 #include "vgui_main.h"
 
+bool VGUI2_UseVGUI1( void );
+void VGUI2_Key( VGUI_KeyAction action, VGUI_KeyCode code );
+void VGUI2_Mouse( VGUI_MouseAction action, int code );
+void VGUI2_MouseMove( int x, int y );
+void VGUI2_TextInput( const char *text );
+
 namespace vgui_support {
 void VGUI_Key(VGUI_KeyAction action, VGUI_KeyCode code)
 {
+	if ( !VGUI2_UseVGUI1() )
+	{
+		VGUI2_Key( action, code );
+		return;
+	}
+
 	App *pApp = App::getInstance();
 	if(!surface)
 		return;
@@ -51,6 +63,12 @@ void VGUI_Key(VGUI_KeyAction action, VGUI_KeyCode code)
 
 void VGUI_Mouse(VGUI_MouseAction action, int code)
 {
+	if ( !VGUI2_UseVGUI1() )
+	{
+		VGUI2_Mouse( action, code );
+		return;
+	}
+
 	App *pApp = App::getInstance();
 	if(!surface)
 		return;
@@ -76,6 +94,12 @@ void VGUI_Mouse(VGUI_MouseAction action, int code)
 
 void VGUI_MouseMove(int x, int y)
 {
+	if ( !VGUI2_UseVGUI1() )
+	{
+		VGUI2_MouseMove( x, y );
+		return;
+	}
+
 	App *pApp = App::getInstance();
 	//fprintf(stdout, "vgui_support: VGUI mouse move %d %d %p\n", x, y, surface);
 	//fflush(stdout);
@@ -86,6 +110,7 @@ void VGUI_MouseMove(int x, int y)
 
 void VGUI_TextInput(const char *text)
 {
-	// stub
+	if ( !VGUI2_UseVGUI1() )
+		VGUI2_TextInput( text );
 }
 }
