@@ -768,5 +768,3 @@ void VGUI2Surface::InternalSolveTraverse( vgui2::VPANEL panel )
 			InternalSolveTraverse( child );
 	}
 }
-
-EXPOSE_SINGLE_INTERFACE( VGUI2Surface, ISurface, VGUI_SURFACE_INTERFACE_VERSION );

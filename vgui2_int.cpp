@@ -26,11 +26,17 @@ from your version.
 #include <port.h>
 #include <xash3d_types.h>
 #include "vgui2_surf.h"
+#include "vgui2_gameui.h"
 #include <Cursor.h>
 #include <IBaseUI.h>
 #include <IClientVGUI.h>
 #include <crtlib.h>
 #include <vgui_api.h>
+
+namespace vgui_support
+{
+extern vguiapi_t *g_api;
+};
 
 class RootPanel : public vgui2::Panel
 {
@@ -68,28 +74,32 @@ private:
 	int initialized;
 	CreateInterfaceFn factoryList[MAX_NUM_FACTORIES];
 	int numFactories;
-	CSysModule *vgui2Module;
-	CSysModule *chromeModule;
+	void *vgui2Module;
+	void *chromeModule;
 };
 
 static RootPanel *rootPanel;
 static IClientVGUI *clientVGUI;
-static VGUI2Surface *vgui2Surface;
-static CSysModule *fileSystemModule;
+static void *fileSystemModule;
 static IVFileSystem009 *fileSystem;
-static IBaseUI *baseUI;
 
-static CSysModule *LoadModule( const char *module )
+static VGUI2Surface vgui2Surface;
+static BaseUI baseUI;
+static GameUIFuncs gameUIFuncs;
+
+static inline void *LoadModule( const char *module )
 {
-	static char szPath[MAX_OSPATH];
-	
-	if ( fileSystem == nullptr )
-		return Sys_LoadModule( module );
+	return vgui_support::g_api->COM_LoadLibrary( module, false, false );
+}
 
-	if ( fileSystem->GetLocalPath( module, szPath, sizeof(szPath) ) == nullptr )
-		return nullptr;
+static inline CreateInterfaceFn GetFactory( void *module )
+{
+	return (CreateInterfaceFn)vgui_support::g_api->COM_GetProcAddress( module, "CreateInterface" );
+}
 
-	return Sys_LoadModule( szPath );
+static inline void UnloadModule( void *module )
+{
+	vgui_support::g_api->COM_FreeLibrary( module );
 }
 
 void BaseUI::Initialize( CreateInterfaceFn *factories, int count )
@@ -101,9 +111,9 @@ void BaseUI::Initialize( CreateInterfaceFn *factories, int count )
 	chromeModule = LoadModule( "chromehtml." OS_LIB_EXT );
 
 	factoryList[numFactories++] = factories[0];
-	factoryList[numFactories++] = Sys_GetFactory( vgui2Module );
+	factoryList[numFactories++] = GetFactory( vgui2Module );
 	factoryList[numFactories++] = factories[1];
-	factoryList[numFactories++] = Sys_GetFactory( chromeModule );
+	factoryList[numFactories++] = GetFactory( chromeModule );
 
 	if ( factories[2] != nullptr )
 	{
@@ -112,7 +122,6 @@ void BaseUI::Initialize( CreateInterfaceFn *factories, int count )
 	}
 
 	vgui2::InitializeVGui2Interfaces( "BaseUI", factoryList, numFactories );
-	vgui2Surface = (VGUI2Surface *)vgui2::surface();
 
 	initialized = 1;
 }
@@ -132,8 +141,8 @@ void BaseUI::Start( IEngineSurface *engineSurface, int interfaceVersion )
 	rootPanel->SetZPos( 0 );
 
 	auto chromeController = (IHTMLChromeController *)factoryList[3]( CHROME_HTML_CONTROLLER_INTERFACE_VERSION, nullptr );
-	vgui2Surface->Init( rootPanel->GetVPanel(), chromeController );
-	vgui2Surface->SetIgnoreMouseVisCalc( true );
+	vgui2Surface.Init( rootPanel->GetVPanel(), chromeController );
+	vgui2Surface.SetIgnoreMouseVisCalc( true );
 
 	vgui2::scheme()->LoadSchemeFromFile( "resource/trackerscheme.res", "BaseUI" );
 
@@ -165,7 +174,7 @@ void BaseUI::Start( IEngineSurface *engineSurface, int interfaceVersion )
 		clientVGUI->SetParent( rootPanel->GetVPanel() );
 	}
 
-	vgui2Surface->SetIgnoreMouseVisCalc( false );
+	vgui2Surface.SetIgnoreMouseVisCalc( false );
 }
 
 void BaseUI::Shutdown()
@@ -185,9 +194,9 @@ void BaseUI::Shutdown()
 	vgui2::system()->SaveUserConfigFile();
 	vgui2::surface()->Shutdown();
 
-	Sys_UnloadModule( chromeModule );
+	UnloadModule( chromeModule );
 	chromeModule = nullptr;
-	Sys_UnloadModule( vgui2Module );
+	UnloadModule( vgui2Module );
 	vgui2Module = nullptr;
 }
 
@@ -213,7 +222,7 @@ void BaseUI::Paint( int x, int y, int right, int bottom )
 		return;
 
 	vgui2::ivgui()->RunFrame();
-	vgui2Surface->SetScreenBounds( x, y, right - x, bottom - y );
+	vgui2Surface.SetScreenBounds( x, y, right - x, bottom - y );
 	rootPanel->SetBounds( 0, 0, right, bottom );
 	rootPanel->Repaint();
 	vgui2::surface()->PaintTraverse( panel );
@@ -236,22 +245,38 @@ void BaseUI::ShowConsole()
 {
 }
 
+extern "C" EXPORT IBaseInterface *CreateInterface( const char *pName, int *pReturnCode )
+{
+	if ( pReturnCode ) *pReturnCode = IFACE_OK;
+
+	if ( !Q_strcmp( pName, BASEUI_INTERFACE_VERSION ) )
+		return (IBaseUI *)&baseUI;
+
+	if ( !Q_strcmp( pName, VGUI_SURFACE_INTERFACE_VERSION ) )
+		return (vgui2::ISurface *)&vgui2Surface;
+
+	if ( !Q_strcmp( pName, VENGINE_GAMEUIFUNCS_VERSION ) )
+		return (IGameUIFuncs *)&gameUIFuncs;
+
+	if ( pReturnCode ) *pReturnCode = IFACE_FAILED;
+	return nullptr;
+}
+
 void VGUI2_Startup( const char *clientlib, int width, int height )
 {
-	if ( baseUI == nullptr )
+	if ( rootPanel == nullptr )
 	{
 		fileSystemModule = LoadModule( "filesystem_stdio." OS_LIB_EXT );
-		auto fileSystemFactory = Sys_GetFactory( fileSystemModule );
+		auto fileSystemFactory = GetFactory( fileSystemModule );
 		fileSystem = (IVFileSystem009 *)fileSystemFactory( "VFileSystem009", nullptr );
 
 		CreateInterfaceFn factories[3];
-		factories[0] = Sys_GetFactoryThis();
+		factories[0] = CreateInterface;
 		factories[1] = fileSystemFactory;
-		factories[2] = Sys_GetFactory( LoadModule( clientlib ) );
+		factories[2] = GetFactory( LoadModule( clientlib ) );
 
-		baseUI = (IBaseUI *)factories[0]( BASEUI_INTERFACE_VERSION, nullptr );
-		baseUI->Initialize( factories, 3 );
-		baseUI->Start( nullptr, 0 );
+		baseUI.Initialize( factories, 3 );
+		baseUI.Start( nullptr, 0 );
 	}
 
 	rootPanel->SetBounds( 0, 0, width, height );
@@ -259,12 +284,11 @@ void VGUI2_Startup( const char *clientlib, int width, int height )
 
 void VGUI2_Shutdown( void )
 {
-	if ( baseUI == nullptr )
+	if ( rootPanel == nullptr )
 		return;
 
-	baseUI->Shutdown();
-	baseUI = nullptr;
-	Sys_UnloadModule( fileSystemModule );
+	baseUI.Shutdown();
+	UnloadModule( fileSystemModule );
 	fileSystemModule = nullptr;
 	fileSystem = nullptr;
 }
@@ -284,20 +308,20 @@ bool VGUI2_UseVGUI1( void )
 
 void VGUI2_Paint( void )
 {
-	if ( baseUI == nullptr )
+	if ( rootPanel == nullptr )
 		return;
 
 	int wide, tall;
 	VGUI2_ScreenSize( wide, tall );
-	baseUI->Paint( 0, 0, wide, tall );
+	baseUI.Paint( 0, 0, wide, tall );
 }
 
 void VGUI2_Key( VGUI_KeyAction action, VGUI_KeyCode code )
 {
-	if ( baseUI == nullptr )
+	if ( rootPanel == nullptr )
 		return;
 
-	if ( !baseUI->Key_Event( action == KA_PRESSED, code + 1, "" ) )
+	if ( !baseUI.Key_Event( action == KA_PRESSED, code + 1, "" ) )
 		return;
 
 	switch ( action )
@@ -316,7 +340,7 @@ void VGUI2_Key( VGUI_KeyAction action, VGUI_KeyCode code )
 
 void VGUI2_Mouse( VGUI_MouseAction action, int code )
 {
-	if ( baseUI == nullptr )
+	if ( rootPanel == nullptr )
 		return;
 
 	if ( !vgui2::surface()->IsCursorVisible() )
@@ -341,7 +365,7 @@ void VGUI2_Mouse( VGUI_MouseAction action, int code )
 
 void VGUI2_MouseMove( int x, int y )
 {
-	if ( baseUI == nullptr )
+	if ( rootPanel == nullptr )
 		return;
 
 	vgui2::inputinternal()->InternalCursorMoved( x, y );
@@ -352,5 +376,3 @@ void VGUI2_TextInput( const char *text )
 	for ( const char *c = text; *c; c++ )
 		vgui2::inputinternal()->InternalKeyTyped( *c );
 }
-
-EXPOSE_SINGLE_INTERFACE( BaseUI, IBaseUI, BASEUI_INTERFACE_VERSION );
