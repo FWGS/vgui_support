@@ -43,7 +43,7 @@ class RootPanel : public vgui2::Panel
 public:
 	RootPanel( vgui2::Panel *parent, const char *panelName ) : vgui2::Panel( parent, panelName ) { }
 
-	virtual vgui2::VPANEL IsWithinTraverse( int x, int y, bool traversePopups )
+	vgui2::VPANEL IsWithinTraverse( int x, int y, bool traversePopups ) override
 	{
 		auto panel = vgui2::Panel::IsWithinTraverse( x, y, traversePopups );
 		if ( panel == GetVPanel() )
@@ -57,16 +57,16 @@ class BaseUI : public IBaseUI
 {
 public:
 	BaseUI() : initialized( 0 ), numFactories( 0 ) { }
-	virtual void Initialize( CreateInterfaceFn *factories, int count );
-	virtual void Start( IEngineSurface *engineSurface, int interfaceVersion );
-	virtual void Shutdown();
-	virtual int Key_Event( int down, int keynum, const char *pszCurrentBinding );
-	virtual void CallEngineSurfaceAppHandler( void *event, void *userData );
-	virtual void Paint( int x, int y, int right, int bottom );
-	virtual void HideGameUI();
-	virtual void ActivateGameUI();
-	virtual void HideConsole();
-	virtual void ShowConsole();
+	void Initialize( CreateInterfaceFn *factories, int count ) override;
+	void Start( IEngineSurface *engineSurface, int interfaceVersion ) override;
+	void Shutdown() override;
+	int Key_Event( int down, int keynum, const char *pszCurrentBinding ) override;
+	void CallEngineSurfaceAppHandler( void *event, void *userData ) override;
+	void Paint( int x, int y, int right, int bottom ) override;
+	void HideGameUI() override;
+	void ActivateGameUI() override;
+	void HideConsole() override;
+	void ShowConsole() override;
 
 private:
 	static constexpr int MAX_NUM_FACTORIES = 6;

@@ -31,15 +31,15 @@ from your version.
 class GameUIFuncs : public IGameUIFuncs
 {
 public:
-	virtual bool IsKeyDown( const char *keyname, bool &isdown );
-	virtual const char *Key_NameForKey( int keynum );
-	virtual const char *Key_BindingForKey( int keynum );
-	virtual vgui2::KeyCode GetVGUI2KeyCodeForBind( const char *bind );
-	virtual void GetVideoModes( vmode_t **liststart, int *count );
-	virtual void GetCurrentVideoMode( int *wide, int *tall, int *bpp );
-	virtual void GetCurrentRenderer( char *name, int namelen, int *windowed, int *hdmodels, int *addons_folder, int *vid_level );
-	virtual bool IsConnectedToVACSecureServer();
-	virtual int Key_KeyStringToKeyNum( const char *pchKey );
+	bool IsKeyDown( const char *keyname, bool &isdown ) override;
+	const char *Key_NameForKey( int keynum ) override;
+	const char *Key_BindingForKey( int keynum ) override;
+	vgui2::KeyCode GetVGUI2KeyCodeForBind( const char *bind ) override;
+	void GetVideoModes( vmode_t **liststart, int *count ) override;
+	void GetCurrentVideoMode( int *wide, int *tall, int *bpp ) override;
+	void GetCurrentRenderer( char *name, int namelen, int *windowed, int *hdmodels, int *addons_folder, int *vid_level ) override;
+	bool IsConnectedToVACSecureServer() override;
+	int Key_KeyStringToKeyNum( const char *pchKey ) override;
 };
 
 #endif // VGUI2_GAMEUI_H
