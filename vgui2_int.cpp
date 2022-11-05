@@ -288,7 +288,6 @@ void VGUI2_Shutdown( void )
 		return;
 
 	baseUI.Shutdown();
-	UnloadModule( fileSystemModule );
 	fileSystemModule = nullptr;
 	fileSystem = nullptr;
 }
