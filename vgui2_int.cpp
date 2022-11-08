@@ -58,7 +58,7 @@ class BaseUI : public IBaseUI
 public:
 	BaseUI() : initialized( 0 ), numFactories( 0 ) { }
 	void Initialize( CreateInterfaceFn *factories, int count ) override;
-	void Start( IEngineSurface *engineSurface, int interfaceVersion ) override;
+	void Start( int width, int height ) override;
 	void Shutdown() override;
 	int Key_Event( int down, int keynum, const char *pszCurrentBinding ) override;
 	void CallEngineSurfaceAppHandler( void *event, void *userData ) override;
@@ -126,14 +126,14 @@ void BaseUI::Initialize( CreateInterfaceFn *factories, int count )
 	initialized = 1;
 }
 
-void BaseUI::Start( IEngineSurface *engineSurface, int interfaceVersion )
+void BaseUI::Start( int width, int height )
 {
 	if ( !initialized )
 		return;
 
 	rootPanel = new RootPanel( nullptr, "RootPanel" );
 	rootPanel->SetCursor( vgui2::dc_none );
-	rootPanel->SetBounds( 0, 0, 40, 30 );
+	rootPanel->SetBounds( 0, 0, width, height );
 	rootPanel->SetPaintBorderEnabled( false );
 	rootPanel->SetPaintBackgroundEnabled( false );
 	rootPanel->SetPaintEnabled( false );
@@ -276,7 +276,7 @@ void VGUI2_Startup( const char *clientlib, int width, int height )
 		factories[2] = GetFactory( LoadModule( clientlib ) );
 
 		baseUI.Initialize( factories, 3 );
-		baseUI.Start( nullptr, 0 );
+		baseUI.Start( width, height );
 	}
 
 	rootPanel->SetBounds( 0, 0, width, height );
