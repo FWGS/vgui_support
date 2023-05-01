@@ -27,7 +27,7 @@ from your version.
 #include "xash3d_types.h"
 namespace vgui_support {
 
-vguiapi_t *g_api;
+legacy_vguiapi_t *g_api;
 
 Panel	*rootpanel = NULL;
 CEngineSurface	*surface = NULL;
@@ -109,7 +109,7 @@ void *VGui_GetPanel( void )
 #define InitAPI InitVGUISupportAPI
 #endif
 
-extern "C" EXPORT void InitAPI(vguiapi_t * api)
+extern "C" EXPORT void InitAPI( legacy_vguiapi_t *api )
 {
 	g_api = api;
 	g_api->Startup = VGui_Startup;

@@ -47,7 +47,7 @@ from your version.
 
 namespace vgui_support
 {
-extern vguiapi_t *g_api;
+extern legacy_vguiapi_t *g_api;
 
 using namespace vgui;
 
