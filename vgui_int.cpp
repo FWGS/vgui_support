@@ -26,26 +26,29 @@ from your version.
 #include "vgui_main.h"
 #include "xash3d_types.h"
 
-void VGUI2_Startup( const char *clientlib, int width, int height );
+void VGUI2_Startup( void *clientlib, int width, int height );
 void VGUI2_Shutdown( void );
 bool VGUI2_UseVGUI1( void );
 void VGUI2_Paint( void );
 
 namespace vgui_support {
 
-legacy_vguiapi_t *g_api;
+vgui_support_api_t *g_api;
 
 Panel	*rootpanel = NULL;
 CEngineSurface	*surface = NULL;
 CEngineApp          staticApp;
 
-void VGui_Startup( const char *clientlib, int width, int height )
+void VGui_ClientStartup( void *clientInstance, int width, int height )
+{
+	VGUI2_Startup( clientInstance, width, height );
+}
+
+void VGui_Startup( int width, int height )
 {
 	if( rootpanel )
 	{
-		// The second call to VGui_Startup will be after client.dll Initialize
-		// Only start client VGUI2 now
-		VGUI2_Startup( clientlib, width, height );
+		VGUI2_Startup( NULL, width, height );
 		rootpanel->setSize( width, height );
 		return;
 	}
@@ -79,35 +82,31 @@ void VGui_Shutdown( void )
 
 	rootpanel = NULL;
 	surface = NULL;
-
-	VGUI2_Shutdown();
 }
 
 void VGui_Paint( void )
 {
 	int w, h;
 
-	//if( cls.state != ca_active || !rootpanel )
-	//	return;
 	if( !g_api->IsInGame() || !rootpanel )
 		return;
 
 	// setup the base panel to cover the screen
 	Panel *pVPanel = surface->getEmbeddedPanel();
-	if( !pVPanel ) return;
-	//SDL_GetWindowSize(host.hWnd, &w, &h);
-	//host.input_enabled = rootpanel->isVisible();
+	if( !pVPanel )
+		return;
+
 	rootpanel->getSize(w, h);
 	EnableScissor( true );
 
-	if ( VGUI2_UseVGUI1() )
+	if( VGUI2_UseVGUI1( ))
 	{
 		staticApp.externalTick ();
 
 		pVPanel->setBounds( 0, 0, w, h );
 		pVPanel->repaint();
 
-		// paint everything 
+		// paint everything
 		pVPanel->paintTraverse();
 	}
 	else
@@ -123,19 +122,26 @@ void *VGui_GetPanel( void )
 }
 }
 
-#ifdef INTERNAL_VGUI_SUPPORT
-#define InitAPI InitVGUISupportAPI
-#endif
-
-extern "C" EXPORT void InitAPI( legacy_vguiapi_t *api )
+static vgui_support_interface_t vguifuncs =
 {
-	g_api = api;
-	g_api->Startup = VGui_Startup;
-	g_api->Shutdown = VGui_Shutdown;
-	g_api->GetPanel = VGui_GetPanel;
-	g_api->Paint = VGui_Paint;
-	g_api->Mouse = VGUI_Mouse;
-	g_api->MouseMove = VGUI_MouseMove;
-	g_api->Key = VGUI_Key;
-	g_api->TextInput = VGUI_TextInput;
+	VGui_Startup,
+	VGui_Shutdown,
+	VGui_GetPanel,
+	VGui_Paint,
+	VGUI_Mouse,
+	VGUI_Key,
+	VGUI_MouseMove,
+	VGUI_TextInput,
+	VGui_ClientStartup
+};
+
+extern "C" int EXPORT GetVGUISupportAPI( int version, vgui_support_interface_t *iface, vgui_support_api_t *engfuncs )
+{
+	if( version != VGUI_SUPPORT_API_VERSION )
+		return 0;
+
+	g_api = engfuncs; // TODO: do not store the pointer
+	memcpy( iface, &vguifuncs, sizeof( vguifuncs ));
+
+	return VGUI_SUPPORT_API_VERSION;
 }

@@ -35,8 +35,8 @@ from your version.
 
 namespace vgui_support
 {
-extern vguiapi_t *g_api;
-};
+extern vgui_support_api_t *g_api;
+} // namespace vgui_support
 
 class RootPanel : public vgui2::Panel
 {
@@ -89,17 +89,17 @@ static GameUIFuncs gameUIFuncs;
 
 static inline void *LoadModule( const char *module )
 {
-	return vgui_support::g_api->COM_LoadLibrary( module, false, false );
+	return vgui_support::g_api->LoadLibrary( module, false, false );
 }
 
 static inline CreateInterfaceFn GetFactory( void *module )
 {
-	return (CreateInterfaceFn)vgui_support::g_api->COM_GetProcAddress( module, "CreateInterface" );
+	return (CreateInterfaceFn)vgui_support::g_api->GetProcAddress( module, "CreateInterface" );
 }
 
 static inline void UnloadModule( void *module )
 {
-	vgui_support::g_api->COM_FreeLibrary( module );
+	vgui_support::g_api->FreeLibrary( module );
 }
 
 void BaseUI::Initialize( CreateInterfaceFn *factories, int count )
@@ -154,8 +154,8 @@ void BaseUI::Start( int width, int height )
 	char szMod[32];
 	vgui2::system()->GetCommandLineParamValue( "-game", szMod, sizeof( szMod ) );
 	char szLocalizeFile[260];
+
 	Q_snprintf( szLocalizeFile, sizeof( szLocalizeFile ), "resource/%s_%%language%%.txt", szMod );
-	szLocalizeFile[sizeof( szLocalizeFile ) - 1] = '\0';
 	vgui2::localize()->AddFile( vgui2::filesystem(), szLocalizeFile );
 
 	// TODO: Load localization from fallback directory
@@ -262,29 +262,30 @@ extern "C" EXPORT IBaseInterface *CreateInterface( const char *pName, int *pRetu
 	return nullptr;
 }
 
-void VGUI2_Startup( const char *clientlib, int width, int height )
+void VGUI2_Startup( void *clientInstance, int width, int height )
 {
-	if ( rootPanel == nullptr )
+	if( rootPanel == nullptr && clientInstance != nullptr )
 	{
 		fileSystemModule = LoadModule( "filesystem_stdio." OS_LIB_EXT );
 		auto fileSystemFactory = GetFactory( fileSystemModule );
-		fileSystem = (IVFileSystem009 *)fileSystemFactory( "VFileSystem009", nullptr );
+		fileSystem = (IVFileSystem009 *)fileSystemFactory( FILESYSTEM_INTERFACE_VERSION, nullptr );
 
 		CreateInterfaceFn factories[3];
 		factories[0] = CreateInterface;
 		factories[1] = fileSystemFactory;
-		factories[2] = GetFactory( LoadModule( clientlib ) );
+		factories[2] = GetFactory( clientInstance );
 
 		baseUI.Initialize( factories, 3 );
 		baseUI.Start( width, height );
 	}
 
-	rootPanel->SetBounds( 0, 0, width, height );
+	if( rootPanel != nullptr )
+		rootPanel->SetBounds( 0, 0, width, height );
 }
 
 void VGUI2_Shutdown( void )
 {
-	if ( rootPanel == nullptr )
+	if( rootPanel == nullptr )
 		return;
 
 	baseUI.Shutdown();
@@ -294,13 +295,13 @@ void VGUI2_Shutdown( void )
 
 void VGUI2_ScreenSize( int &width, int &height )
 {
-	if ( rootPanel )
+	if( rootPanel )
 		rootPanel->GetSize( width, height );
 }
 
 bool VGUI2_UseVGUI1( void )
 {
-	if ( clientVGUI )
+	if( clientVGUI )
 		return clientVGUI->UseVGUI1();
 	return true;
 }

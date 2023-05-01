@@ -30,8 +30,8 @@ from your version.
 
 namespace vgui_support
 {
-extern vguiapi_t *g_api;
-};
+extern vgui_support_api_t *g_api;
+}
 
 void VGUI2_ScreenSize( int &width, int &height );
 
