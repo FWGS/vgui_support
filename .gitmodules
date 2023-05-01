@@ -3,4 +3,4 @@
 	url = https://github.com/FWGS/vgui-dev
 [submodule "vgui2-dev"]
 	path = vgui2-dev
-	url = https://github.com/kungfulon/vgui2-dev.git
+	url = https://github.com/FWGS/vgui2-dev.git
