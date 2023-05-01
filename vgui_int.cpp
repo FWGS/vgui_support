@@ -25,6 +25,12 @@ from your version.
 
 #include "vgui_main.h"
 #include "xash3d_types.h"
+
+void VGUI2_Startup( const char *clientlib, int width, int height );
+void VGUI2_Shutdown( void );
+bool VGUI2_UseVGUI1( void );
+void VGUI2_Paint( void );
+
 namespace vgui_support {
 
 legacy_vguiapi_t *g_api;
@@ -33,10 +39,13 @@ Panel	*rootpanel = NULL;
 CEngineSurface	*surface = NULL;
 CEngineApp          staticApp;
 
-void VGui_Startup( int width, int height )
+void VGui_Startup( const char *clientlib, int width, int height )
 {
 	if( rootpanel )
 	{
+		// The second call to VGui_Startup will be after client.dll Initialize
+		// Only start client VGUI2 now
+		VGUI2_Startup( clientlib, width, height );
 		rootpanel->setSize( width, height );
 		return;
 	}
@@ -70,6 +79,8 @@ void VGui_Shutdown( void )
 
 	rootpanel = NULL;
 	surface = NULL;
+
+	VGUI2_Shutdown();
 }
 
 void VGui_Paint( void )
@@ -89,13 +100,20 @@ void VGui_Paint( void )
 	rootpanel->getSize(w, h);
 	EnableScissor( true );
 
-	staticApp.externalTick ();
+	if ( VGUI2_UseVGUI1() )
+	{
+		staticApp.externalTick ();
 
-	pVPanel->setBounds( 0, 0, w, h );
-	pVPanel->repaint();
+		pVPanel->setBounds( 0, 0, w, h );
+		pVPanel->repaint();
 
-	// paint everything 
-	pVPanel->paintTraverse();
+		// paint everything 
+		pVPanel->paintTraverse();
+	}
+	else
+	{
+		VGUI2_Paint();
+	}
 
 	EnableScissor( false );
 }
