@@ -643,14 +643,13 @@ void VGUI2Surface::SetAllowHTMLJavaScript( bool state )
 
 void VGUI2Surface::SetLanguage( const char *pchLang )
 {
-	if ( pchLang != nullptr )
+	if( pchLang != nullptr )
 	{
-		Q_strncpy( language, pchLang, sizeof( language ) );
-		language[sizeof( language ) - 1] = '\0';
+		Q_strncpy( language, pchLang, sizeof( language ));
 	}
 	else
 	{
-		Q_strcpy( language, "english" );
+		Q_strncpy( language, "english", sizeof( language ));
 	}
 }
 
