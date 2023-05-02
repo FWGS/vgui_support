@@ -46,8 +46,8 @@ public:
 	vgui2::VPANEL IsWithinTraverse( int x, int y, bool traversePopups ) override
 	{
 		auto panel = vgui2::Panel::IsWithinTraverse( x, y, traversePopups );
-		if ( panel == GetVPanel() )
-			return NULL;
+		if( panel == GetVPanel() )
+			return 0;
 
 		return panel;
 	}
@@ -104,11 +104,15 @@ static inline void UnloadModule( void *module )
 
 void BaseUI::Initialize( CreateInterfaceFn *factories, int count )
 {
-	if ( initialized )
+	if( initialized )
 		return;
 
 	vgui2Module = LoadModule( "vgui2." OS_LIB_EXT );
 	chromeModule = LoadModule( "chromehtml." OS_LIB_EXT );
+
+	// a1ba: make VGUI2 optional
+	if( !vgui2Module || !chromeModule )
+		return;
 
 	factoryList[numFactories++] = factories[0];
 	factoryList[numFactories++] = GetFactory( vgui2Module );
@@ -214,11 +218,11 @@ void BaseUI::CallEngineSurfaceAppHandler( void *event, void *userData )
 
 void BaseUI::Paint( int x, int y, int right, int bottom )
 {
-	if ( !initialized )
+	if( !initialized )
 		return;
 
 	vgui2::VPANEL panel = vgui2::surface()->GetEmbeddedPanel();
-	if ( panel == NULL )
+	if( !panel )
 		return;
 
 	vgui2::ivgui()->RunFrame();
