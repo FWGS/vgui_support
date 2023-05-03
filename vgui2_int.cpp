@@ -23,14 +23,15 @@ from your version.
 
 */
 
+#include <port.h>
 #include <crtlib.h>
 #include <Cursor.h>
 #include <IBaseUI.h>
 #include <IClientVGUI.h>
-#include <port.h>
 #include "vgui_main.h"
 #include "vgui2_surf.h"
 #include "vgui2_gameui.h"
+#include "filesystem.h"
 
 namespace vgui_support
 {
@@ -77,7 +78,7 @@ private:
 static RootPanel *rootPanel;
 static IClientVGUI *clientVGUI;
 static void *fileSystemModule;
-static IVFileSystem009 *fileSystem;
+static fs_api_t *fs;
 
 static VGUI2Surface vgui2Surface;
 static BaseUI baseUI;
@@ -152,7 +153,9 @@ void BaseUI::Start( int width, int height )
 	vgui2::localize()->AddFile( vgui2::filesystem(), "resource/valve_%language%.txt" );
 
 	char szMod[32];
-	vgui2::system()->GetCommandLineParamValue( "-game", szMod, sizeof( szMod ) );
+	// doesn't work on Linux
+	// vgui2::system()->GetCommandLineParamValue( "-game", szMod, sizeof( szMod ) );
+	Q_strncpy( szMod, fs->GetFileSystemGlobals()->GameInfo->gamefolder, sizeof( szMod ));
 	char szLocalizeFile[260];
 
 	Q_snprintf( szLocalizeFile, sizeof( szLocalizeFile ), "resource/%s_%%language%%.txt", szMod );
@@ -271,7 +274,7 @@ void VGUI2_Startup( void *clientInstance, int width, int height )
 	{
 		fileSystemModule = LoadModule( "filesystem_stdio." OS_LIB_EXT );
 		auto fileSystemFactory = GetFactory( fileSystemModule );
-		fileSystem = (IVFileSystem009 *)fileSystemFactory( FILESYSTEM_INTERFACE_VERSION, nullptr );
+		fs = (fs_api_t *)fileSystemFactory( FS_API_CREATEINTERFACE_TAG, NULL );
 
 		CreateInterfaceFn factories[] =
 		{
@@ -288,14 +291,14 @@ void VGUI2_Startup( void *clientInstance, int width, int height )
 		rootPanel->SetBounds( 0, 0, width, height );
 }
 
-void VGUI2_Shutdown( void )
+void VGUI2_Shutdown()
 {
 	if( rootPanel == nullptr )
 		return;
 
 	baseUI.Shutdown();
 	fileSystemModule = nullptr;
-	fileSystem = nullptr;
+	fs = nullptr;
 }
 
 void VGUI2_ScreenSize( int &width, int &height )
