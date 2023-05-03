@@ -23,30 +23,26 @@ from your version.
 
 */
 
-#include "vgui2_surf.h"
+#include <wchar.h>
 #include <Cursor.h>
-#include <vgui_api.h>
 #include <crtlib.h>
+#include "vgui_main.h"
+#include "vgui2_surf.h"
 
-namespace vgui_support
-{
-extern vgui_support_api_t *g_api;
-}
-
-void VGUI2_ScreenSize( int &width, int &height );
+using namespace vgui_support;
 
 static const auto VPANEL_NORMAL = ( (vgui2::SurfacePlat *)NULL );
 static const auto VPANEL_MINIMIZED = ( (vgui2::SurfacePlat *)0x00000001 );
 
 void VGUI2Surface::Shutdown()
 {
-	if ( chromeController )
+	if( chromeController )
 		chromeController->Shutdown();
 }
 
 void VGUI2Surface::RunFrame()
 {
-	if ( chromeController )
+	if( chromeController )
 		chromeController->RunFrame();
 }
 
@@ -67,7 +63,7 @@ void VGUI2Surface::PushMakeCurrent( vgui2::VPANEL panel, bool useInsets )
 	int clipRect[4];
 	int wide, tall;
 
-	if ( useInsets )
+	if( useInsets )
 		vgui2::ipanel()->GetInset( panel, insets[0], insets[1], insets[2], insets[3] );
 
 	vgui2::ipanel()->GetAbsPos( panel, absExtents[0], absExtents[1] );
@@ -77,86 +73,105 @@ void VGUI2Surface::PushMakeCurrent( vgui2::VPANEL panel, bool useInsets )
 
 	vgui2::ipanel()->GetClipRect( panel, clipRect[0], clipRect[1], clipRect[2], clipRect[3] );
 
-	// engineSurface->PushMakeCurrent( insets, absExtents, clipRect );
+	VGUIPanel p( panel );
+	surface->PushMakeCurrent( p, insets, absExtents, clipRect );
 }
 
 void VGUI2Surface::PopMakeCurrent( vgui2::VPANEL panel )
 {
-	// engineSurface->PopMakeCurrent();
+	VGUIPanel p( panel );
+	surface->PopMakeCurrent( p );
 }
 
 void VGUI2Surface::DrawSetColor( int r, int g, int b, int a )
 {
-	// engineSurface->DrawSetColor( r, g, b, a );
+	surface->drawSetColor( r, g, b, a );
 }
 
 void VGUI2Surface::DrawSetColor( Color col )
 {
-	// engineSurface->DrawSetColor( col[0], col[1], col[2], col[3] );
+	surface->drawSetColor( col[0], col[1], col[2], col[3] );
 }
 
 void VGUI2Surface::DrawFilledRect( int x0, int y0, int x1, int y1 )
 {
-	// engineSurface->DrawFilledRect( x0, y0, x1, y1 );
+	surface->drawFilledRect( x0, y0, x1, y1 );
 }
 
 void VGUI2Surface::DrawOutlinedRect( int x0, int y0, int x1, int y1 )
 {
-	// engineSurface->DrawOutlinedRect( x0, y0, x1, y1 );
+	surface->drawOutlinedRect( x0, y0, x1, y1 );
 }
 
 void VGUI2Surface::DrawLine( int x0, int y0, int x1, int y1 )
 {
-	// engineSurface sucks
+	surface->drawLine( x0, y0, x1, y1 );
 }
 
 void VGUI2Surface::DrawPolyLine( int *px, int *py, int numPoints )
 {
-	// engineSurface sucks
+	surface->drawPolyLine( px, py, numPoints );
 }
 
 void VGUI2Surface::DrawSetTextFont( vgui2::HFont font )
 {
-	// engineSurface->DrawSetTextFont( font );
+	if( font == -1 )
+		return;
+
+	surface->drawSetTextFont((vgui::Font *)font );
 }
 
 void VGUI2Surface::DrawSetTextColor( int r, int g, int b, int a )
 {
-	// engineSurface->DrawSetTextColor( r, g, b, a );
+	surface->drawSetTextColor( r, g, b, a );
 }
 
 void VGUI2Surface::DrawSetTextColor( Color col )
 {
-	// engineSurface->DrawSetTextColor( col[0], col[1], col[2], col[3] );
+	surface->drawSetTextColor( col[0], col[1], col[2], col[3] );
 }
 
 void VGUI2Surface::DrawSetTextPos( int x, int y )
 {
-	// engineSurface->DrawSetTextPos( x, y );
+	surface->drawSetTextPos( x, y );
 }
 
 void VGUI2Surface::DrawGetTextPos( int &x, int &y )
 {
-	// engineSurface->DrawGetTextPos( x, y );
+	surface->drawGetTextPos( x, y );
 }
 
 void VGUI2Surface::DrawPrintText( const wchar_t *text, int textLen )
 {
+	if( !text || textLen <= 0 )
+		return;
+
+	auto str = new char[textLen + 1];
+
+	wcstombs( str, text, textLen );
+	surface->drawPrintText( str, textLen );
+
+	delete[] str;
 	// engineSurface->DrawPrintText( text, textLen );
 }
 
 void VGUI2Surface::DrawUnicodeChar( wchar_t wch )
 {
-	// engineSurface->DrawUnicodeChar( wch, false );
+	char s[16]; // MB_CUR_MAX makes it VLA
+	auto len = wctomb( s, wch );
+
+	surface->drawPrintText( s, len );
 }
 
 void VGUI2Surface::DrawUnicodeCharAdd( wchar_t wch )
 {
-	// engineSurface->DrawUnicodeChar( wch, true );
+	// TODO: any difference?
+	DrawUnicodeChar( wch );
 }
 
 void VGUI2Surface::DrawFlushText()
 {
+	// TODO: stub
 }
 
 vgui2::IHTML *VGUI2Surface::CreateHTMLWindow( vgui2::IHTMLEvents *events, vgui2::VPANEL context )
@@ -174,39 +189,38 @@ void VGUI2Surface::DeleteHTMLWindow( vgui2::IHTML *htmlwin )
 
 void VGUI2Surface::DrawSetTextureFile( int id, const char *filename, int hardwareFilter, bool forceReload )
 {
-	// engineSurface->DrawSetTextureFile( id, filename );
+	surface->drawSetTextureFile( id, filename );
 }
 
 void VGUI2Surface::DrawSetTextureRGBA( int id, const unsigned char *rgba, int wide, int tall, int hardwareFilter, bool forceReload )
 {
-	// engineSurface->DrawSetTextureRGBA( id, rgba, wide, tall );
+	surface->drawSetTextureRGBA( id, (const char *)rgba, wide, tall );
 }
 
 void VGUI2Surface::DrawSetTexture( int id )
 {
-	// engineSurface->DrawSetTexture( id );
+	surface->drawSetTexture( id );
 }
 
 void VGUI2Surface::DrawGetTextureSize( int id, int &wide, int &tall )
 {
-	wide = 1;
-	tall = 1;
-	// engineSurface->DrawGetTextureSize( id, wide, tall );
+	surface->drawGetTextureSize( id, wide, tall );
 }
 
 void VGUI2Surface::DrawTexturedRect( int x0, int y0, int x1, int y1 )
 {
-	// engineSurface->DrawTexturedRect( x0, y0, x1, y1 );
+	surface->drawTexturedRect( x0, y0, x1, y1 );
 }
 
 bool VGUI2Surface::IsTextureIDValid( int id )
 {
+	// TODO: do anything here?
 	return true;
 }
 
 int VGUI2Surface::CreateNewTextureID( bool procedural )
 {
-	return vgui_support::g_api->GenerateTexture();
+	return surface->createNewTextureID();
 }
 
 void VGUI2Surface::GetScreenSize( int &wide, int &tall )
@@ -222,7 +236,7 @@ void VGUI2Surface::BringToFront( vgui2::VPANEL panel )
 {
 	vgui2::ipanel()->MoveToFront( panel );
 
-	if ( vgui2::ipanel()->IsPopup( panel ) )
+	if( vgui2::ipanel()->IsPopup( panel ) )
 		MovePopupToFront( panel );
 }
 
@@ -237,7 +251,7 @@ void VGUI2Surface::SetPanelVisible( vgui2::VPANEL panel, bool state )
 
 void VGUI2Surface::SetMinimized( vgui2::VPANEL panel, bool state )
 {
-	if ( !state )
+	if( !state )
 	{
 		vgui2::ipanel()->SetPlat( panel, VPANEL_NORMAL );
 		return;
@@ -266,14 +280,14 @@ void VGUI2Surface::SetAsToolBar( vgui2::VPANEL panel, bool state )
 
 void VGUI2Surface::CreatePopup( vgui2::VPANEL panel, bool minimised, bool showTaskbarIcon, bool disabled, bool mouseInput, bool kbInput )
 {
-	if ( vgui2::ipanel()->GetParent( panel ) == NULL )
+	if( vgui2::ipanel()->GetParent( panel ) == NULL )
 		vgui2::ipanel()->SetParent( panel, GetEmbeddedPanel() );
 
 	vgui2::ipanel()->SetPopup( panel, true );
 	vgui2::ipanel()->SetKeyBoardInputEnabled( panel, kbInput );
 	vgui2::ipanel()->SetMouseInputEnabled( panel, mouseInput );
 
-	if ( !popups.hasElement( panel ) )
+	if( !popups.hasElement( panel ) )
 		popups.addElement( panel );
 }
 
@@ -288,18 +302,18 @@ void VGUI2Surface::Invalidate( vgui2::VPANEL panel )
 void VGUI2Surface::SetCursor( vgui2::HCursor cursor )
 {
 	// These cursors are not available in VGUI1, so ignore them for now.
-	if ( cursor >= vgui2::dc_last || cursor == vgui2::dc_waitarrow || cursor == vgui2::dc_blank )
+	if( cursor >= vgui2::dc_last || cursor == vgui2::dc_waitarrow || cursor == vgui2::dc_blank )
 		return;
 
-	if ( currentCursor != cursor )
+	if( currentCursor != cursor )
 	{
 		currentCursor = cursor;
 
 		// Hack to make it compatible with VGUI1
-		if ( cursor > vgui2::dc_waitarrow )
+		if( cursor > vgui2::dc_waitarrow )
 			--cursor;
 
-		vgui_support::g_api->CursorSelect( (VGUI_DefaultCursor)cursor );
+		g_api->CursorSelect( (VGUI_DefaultCursor)cursor );
 	}
 }
 
@@ -359,7 +373,7 @@ void VGUI2Surface::SetTranslateExtendedKeys( bool state )
 
 vgui2::VPANEL VGUI2Surface::GetTopmostPopup()
 {
-	if ( popups.getCount() > 0 )
+	if( popups.getCount() > 0 )
 		return popups[popups.getCount() - 1];
 
 	return NULL;
@@ -369,7 +383,7 @@ void VGUI2Surface::SetTopLevelFocus( vgui2::VPANEL panel )
 {
 	while ( panel )
 	{
-		if ( vgui2::ipanel()->IsPopup( panel ) && vgui2::ipanel()->IsMouseInputEnabled( panel ) )
+		if( vgui2::ipanel()->IsPopup( panel ) && vgui2::ipanel()->IsMouseInputEnabled( panel ) )
 		{
 			BringToFront( panel );
 			break;
@@ -381,45 +395,53 @@ void VGUI2Surface::SetTopLevelFocus( vgui2::VPANEL panel )
 
 vgui2::HFont VGUI2Surface::CreateFont()
 {
-	return -1;
-	// return engineSurface->CreateFont();
+	return surface->createFont();
 }
 
 bool VGUI2Surface::AddGlyphSetToFont( vgui2::HFont font, const char *fontName, int tall, int weight, int blur, int scanlines, int flags, int lowRange, int highRange )
 {
-	return false;
-	// return engineSurface->AddGlyphSetToFont( font, fontName, tall, weight, flags & FONTFLAG_ITALIC, flags & FONTFLAG_UNDERLINE, flags & FONTFLAG_STRIKEOUT, flags & FONTFLAG_SYMBOL );
+	return surface->addGlyphSetToFont( font, fontName, tall, weight, flags & FONTFLAG_ITALIC, flags & FONTFLAG_UNDERLINE, flags & FONTFLAG_STRIKEOUT, flags & FONTFLAG_SYMBOL );
 }
 
 bool VGUI2Surface::AddCustomFontFile( const char *fontFileName )
 {
-	return false;
-	// return engineSurface->AddCustomFontFile( fontFileName );
+	return surface->addCustomFontFile( fontFileName );
 }
 
 int VGUI2Surface::GetFontTall( vgui2::HFont font )
 {
-	return 1;
-	// return engineSurface->GetFontTall( font );
+	return surface->getFontTall( font );
 }
 
 void VGUI2Surface::GetCharABCwide( vgui2::HFont font, int ch, int &a, int &b, int &c )
 {
 	a = b = c = 1;
-	// engineSurface->GetCharABCwide( font, ch, a, b, c );
+	surface->getCharABCWide( font,ch, a, b, c );
 }
 
 int VGUI2Surface::GetCharacterWidth( vgui2::HFont font, int ch )
 {
-	return 1;
-	// return engineSurface->GetCharacterWidth( font, ch );
+	int a, b, c;
+	GetCharABCwide( font, ch, a, b, c );
+	return a + b + c;
 }
 
 void VGUI2Surface::GetTextSize( vgui2::HFont font, const wchar_t *text, int &wide, int &tall )
 {
-	wide = 1;
-	tall = 1;
-	// engineSurface->GetTextSize( font, text, wide, tall );
+	if( !text )
+	{
+		wide = 1;
+		tall = 1;
+		return;
+	}
+
+	auto len = wcslen( text );
+	auto str = new char[len + 1];
+
+	wcstombs( str, text, len );
+	surface->getTextSize( font, str, wide, tall );
+
+	delete[] str;
 }
 
 vgui2::VPANEL VGUI2Surface::GetNotifyPanel()
@@ -433,7 +455,7 @@ void VGUI2Surface::SetNotifyIcon( vgui2::VPANEL context, vgui2::HTexture icon, v
 
 void VGUI2Surface::PlaySound( const char *fileName )
 {
-	// vgui_support::g_api->PlaySound( fileName );
+	surface->playSound( fileName );
 }
 
 int VGUI2Surface::GetPopupCount()
@@ -443,7 +465,7 @@ int VGUI2Surface::GetPopupCount()
 
 vgui2::VPANEL VGUI2Surface::GetPopup( int index )
 {
-	if ( 0 <= index && index < popups.getCount() )
+	if( 0 <= index && index < popups.getCount() )
 		return popups[index];
 
 	return NULL;
@@ -451,13 +473,13 @@ vgui2::VPANEL VGUI2Surface::GetPopup( int index )
 
 bool VGUI2Surface::ShouldPaintChildPanel( vgui2::VPANEL panel )
 {
-	if ( restrictedPanel != NULL && vgui2::ipanel()->HasParent( panel, restrictedPanel ) )
+	if( restrictedPanel != NULL && vgui2::ipanel()->HasParent( panel, restrictedPanel ) )
 		return false;
 
-	if ( !vgui2::ipanel()->IsPopup( panel ) )
+	if( !vgui2::ipanel()->IsPopup( panel ) )
 		return true;
 
-	if ( popups.hasElement( panel ) )
+	if( popups.hasElement( panel ) )
 		vgui2::ipanel()->Render_SetPopupVisible( panel, true );
 
 	return false;
@@ -470,7 +492,7 @@ bool VGUI2Surface::RecreateContext( vgui2::VPANEL panel )
 
 void VGUI2Surface::AddPanel( vgui2::VPANEL panel )
 {
-	if ( !vgui2::ipanel()->IsPopup( panel ) )
+	if( !vgui2::ipanel()->IsPopup( panel ) )
 		return;
 
 	CreatePopup( panel, false, false, false, true, true );
@@ -480,13 +502,13 @@ void VGUI2Surface::ReleasePanel( vgui2::VPANEL panel )
 {
 	popups.removeElement( panel );
 
-	if ( restrictedPanel == panel )
+	if( restrictedPanel == panel )
 		restrictedPanel = NULL;
 }
 
 void VGUI2Surface::MovePopupToFront( vgui2::VPANEL panel )
 {
-	if ( popups.hasElement( panel ) )
+	if( popups.hasElement( panel ) )
 	{
 		popups.removeElement( panel );
 		popups.addElement( panel );
@@ -495,7 +517,7 @@ void VGUI2Surface::MovePopupToFront( vgui2::VPANEL panel )
 
 void VGUI2Surface::MovePopupToBack( vgui2::VPANEL panel )
 {
-	if ( popups.hasElement( panel ) )
+	if( popups.hasElement( panel ) )
 	{
 		popups.removeElement( panel );
 		popups.insertElementAt( panel, 0 );
@@ -511,26 +533,26 @@ void VGUI2Surface::SolveTraverse( vgui2::VPANEL panel, bool forceApplySchemeSett
 
 void VGUI2Surface::PaintTraverse( vgui2::VPANEL panel )
 {
-	if ( !vgui2::ipanel()->IsVisible( panel ) )
+	if( !vgui2::ipanel()->IsVisible( panel ) )
 		return;
 
-	if ( panel != GetEmbeddedPanel() )
+	if( panel != GetEmbeddedPanel() )
 	{
 		vgui2::ipanel()->PaintTraverse( panel, true, true );
 		return;
 	}
 
-	if ( restrictedPanel )
+	if( restrictedPanel )
 		panel = restrictedPanel;
 
-	for ( int i = 0; i < popups.getCount(); ++i )
+	for( int i = 0; i < popups.getCount(); ++i )
 		vgui2::ipanel()->Render_SetPopupVisible( popups[i], false );
 
 	vgui2::ipanel()->PaintTraverse( panel, true, true );
 
-	for ( int i = 0; i < popups.getCount(); ++i )
+	for( int i = 0; i < popups.getCount(); ++i )
 	{
-		if ( vgui2::ipanel()->Render_GetPopupVisible( popups[i] ) )
+		if( vgui2::ipanel()->Render_GetPopupVisible( popups[i] ) )
 			vgui2::ipanel()->PaintTraverse( popups[i], true, true );
 	}
 }
@@ -562,20 +584,20 @@ void VGUI2Surface::GetProportionalBase( int &width, int &height )
 
 void VGUI2Surface::CalculateMouseVisible()
 {
-	if ( ignoreMouseVisCalc )
+	if( ignoreMouseVisCalc )
 		return;
 
 	needMouse = false;
 	needKB = false;
 
-	for ( int i = 0; i < popups.getCount(); ++i )
+	for( int i = 0; i < popups.getCount(); ++i )
 	{
 		bool visible = vgui2::ipanel()->IsVisible( popups[i] );
 		vgui2::VPANEL parent = vgui2::ipanel()->GetParent( popups[i] );
 
 		while ( parent != NULL && visible )
 		{
-			if ( !vgui2::ipanel()->IsVisible( parent ) )
+			if( !vgui2::ipanel()->IsVisible( parent ) )
 			{
 				visible = false;
 				break;
@@ -584,7 +606,7 @@ void VGUI2Surface::CalculateMouseVisible()
 			parent = vgui2::ipanel()->GetParent( parent );
 		}
 
-		if ( !visible )
+		if( !visible )
 			continue;
 
 		// TODO: Uncomment these once fully implemented to enable input capture
@@ -594,7 +616,7 @@ void VGUI2Surface::CalculateMouseVisible()
 
 	UnlockCursor();
 
-	if ( needMouse )
+	if( needMouse )
 	{
 		SetCursor( vgui2::dc_arrow );
 	}
@@ -617,23 +639,22 @@ bool VGUI2Surface::HasCursorPosFunctions()
 
 void VGUI2Surface::SurfaceGetCursorPos( int &x, int &y )
 {
-	vgui_support::g_api->GetCursorPos( &x, &y );
+	g_api->GetCursorPos( &x, &y );
 }
 
 void VGUI2Surface::SurfaceSetCursorPos( int x, int y )
 {
-	// vgui_support::g_api->SetCursorPos( x, y );
+	// g_api->SetCursorPos( x, y );
 }
 
 void VGUI2Surface::DrawTexturedPolygon( vgui2::VGuiVertex *pVertices, int n )
 {
-	// engineSurface->DrawTexturedPolygon( pVertices, n );
+	surface->drawTexturedPolygon( pVertices, n );
 }
 
 int VGUI2Surface::GetFontAscent( vgui2::HFont font, wchar_t wch )
 {
-	// return some arbitrary number for now
-	return 0;
+	return surface->getFontAscent( font, wch );
 }
 
 void VGUI2Surface::SetAllowHTMLJavaScript( bool state )
@@ -660,29 +681,37 @@ const char *VGUI2Surface::GetLanguage()
 
 bool VGUI2Surface::DeleteTextureByID( int id )
 {
-	return false;
-	// return engineSurface->DeleteTextureByID( id );
+	return surface->deleteTextureByID( id );
 }
 
 void VGUI2Surface::DrawUpdateRegionTextureBGRA( int nTextureID, int x, int y, const unsigned char *pchData, int wide, int tall )
 {
-	// engineSurface->DrawUpdateRegionTextureBGRA( nTextureID, x, y, pchData, wide, tall );
+	surface->drawSubTextureBGRA( nTextureID, x, y, pchData, wide, tall );
 }
 
 void VGUI2Surface::DrawSetTextureBGRA( int id, const unsigned char *bgra, int wide, int tall )
 {
-	// engineSurface->DrawSetTextureBGRA( id, bgra, wide, tall );
+	auto p = new unsigned char[wide * tall * 4];
+	for( int i = 0; i < wide * tall * 4; i += 4 )
+	{
+		p[i + 0] = bgra[i + 2];
+		p[i + 1] = bgra[i + 1];
+		p[i + 2] = bgra[i + 0];
+		p[i + 3] = bgra[i + 3];
+	}
+	surface->drawSetTextureRGBA( id, (const char *)p, wide, tall );
+	delete[] p;
 }
 
 void VGUI2Surface::CreateBrowser( vgui2::VPANEL panel, IHTMLResponses *pBrowser, bool bPopupWindow, const char *pchUserAgentIdentifier )
 {
-	if ( chromeController )
+	if( chromeController )
 		chromeController->CreateBrowser( pBrowser, false, "Valve Half-Life" );
 }
 
 void VGUI2Surface::RemoveBrowser( vgui2::VPANEL panel, IHTMLResponses *pBrowser )
 {
-	if ( chromeController )
+	if( chromeController )
 		chromeController->RemoveBrowser( pBrowser );
 }
 
@@ -712,7 +741,7 @@ void VGUI2Surface::Init( vgui2::VPANEL _embeddedPanel, IHTMLChromeController *pC
 	SetEmbeddedPanel( _embeddedPanel );
 
 	chromeController = pChromeController;
-	if ( chromeController )
+	if( chromeController )
 	{
 		chromeController->Init( "htmlcache", "htmlcookies" );
 		chromeController->SetCefThreadTargetFrameRate( 60 );
@@ -734,10 +763,10 @@ void VGUI2Surface::SetIgnoreMouseVisCalc( bool state )
 
 void VGUI2Surface::InternalSchemeSettingsTraverse( vgui2::VPANEL panel, bool forceApplySchemeSettings )
 {
-	for ( int i = 0; i < vgui2::ipanel()->GetChildCount( panel ); ++i )
+	for( int i = 0; i < vgui2::ipanel()->GetChildCount( panel ); ++i )
 	{
 		vgui2::VPANEL child = vgui2::ipanel()->GetChild( panel, i );
-		if ( forceApplySchemeSettings || vgui2::ipanel()->IsVisible( child ) )
+		if( forceApplySchemeSettings || vgui2::ipanel()->IsVisible( child ) )
 			InternalSchemeSettingsTraverse( child, forceApplySchemeSettings );
 	}
 
@@ -748,10 +777,10 @@ void VGUI2Surface::InternalThinkTraverse( vgui2::VPANEL panel )
 {
 	vgui2::ipanel()->Think( panel );
 
-	for ( int i = 0; i < vgui2::ipanel()->GetChildCount( panel ); ++i )
+	for( int i = 0; i < vgui2::ipanel()->GetChildCount( panel ); ++i )
 	{
 		vgui2::VPANEL child = vgui2::ipanel()->GetChild( panel, i );
-		if ( vgui2::ipanel()->IsVisible( child ) )
+		if( vgui2::ipanel()->IsVisible( child ) )
 			InternalThinkTraverse( child );
 	}
 }
@@ -760,10 +789,10 @@ void VGUI2Surface::InternalSolveTraverse( vgui2::VPANEL panel )
 {
 	vgui2::ipanel()->Solve( panel );
 
-	for ( int i = 0; i < vgui2::ipanel()->GetChildCount( panel ); ++i )
+	for( int i = 0; i < vgui2::ipanel()->GetChildCount( panel ); ++i )
 	{
 		vgui2::VPANEL child = vgui2::ipanel()->GetChild( panel, i );
-		if ( vgui2::ipanel()->IsVisible( child ) )
+		if( vgui2::ipanel()->IsVisible( child ) )
 			InternalSolveTraverse( child );
 	}
 }

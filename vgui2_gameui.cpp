@@ -23,13 +23,8 @@ from your version.
 
 */
 
+#include "vgui_main.h"
 #include "vgui2_gameui.h"
-#include <vgui_api.h>
-
-namespace vgui_support
-{
-extern vgui_support_api_t *g_api;
-}
 
 bool GameUIFuncs::IsKeyDown( const char *keyname, bool &isdown )
 {
@@ -50,7 +45,6 @@ const char *GameUIFuncs::Key_BindingForKey( int keynum )
 vgui2::KeyCode GameUIFuncs::GetVGUI2KeyCodeForBind( const char *bind )
 {
 	return vgui2::KEY_TAB;
-	// return ( vgui2::KeyCode )( vgui_support::g_api->KeyForBind( bind ) + 1 );
 }
 
 void GameUIFuncs::GetVideoModes( vmode_t **liststart, int *count )

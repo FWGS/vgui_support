@@ -26,25 +26,33 @@ from your version.
 #include "vgui_main.h"
 #include "xash3d_types.h"
 
-void VGUI2_Startup( void *clientlib, int width, int height );
-void VGUI2_Shutdown( void );
-bool VGUI2_UseVGUI1( void );
-void VGUI2_Paint( void );
+using namespace vgui;
 
-namespace vgui_support {
-
-vgui_support_api_t *g_api;
-
-Panel	*rootpanel = NULL;
-CEngineSurface	*surface = NULL;
-CEngineApp          staticApp;
-
-void VGui_ClientStartup( void *clientInstance, int width, int height )
+namespace vgui_support
 {
-	VGUI2_Startup( clientInstance, width, height );
+vgui_support_api_t *g_api;
+CEngineSurface *surface = nullptr;
+
+static Panel *rootpanel = nullptr;
+static class CEngineApp : public App
+{
+public:
+	explicit CEngineApp( bool externalMain = true );
+	void main( int argc, char *argv[] ) override;
+} staticApp;
+
+CEngineApp::CEngineApp( bool externalMain ) :
+	App( externalMain )
+{
+
 }
 
-void VGui_Startup( int width, int height )
+void CEngineApp::main( int argc, char *argv[] )
+{
+
+}
+
+static void VGUI_Startup( int width, int height )
 {
 	if( rootpanel )
 	{
@@ -64,16 +72,13 @@ void VGui_Startup( int width, int height )
 	staticApp.setMinimumTickMillisInterval( 0 );
 
 	surface = new CEngineSurface( rootpanel );
+
 	rootpanel->setSurfaceBaseTraverse( surface );
 
-
-	//ASSERT( rootpanel->getApp() != NULL );
-	//ASSERT( rootpanel->getSurfaceBase() != NULL );
-
-	g_api->DrawInit ();
+	g_api->DrawInit();
 }
 
-void VGui_Shutdown( void )
+static void VGUI_Shutdown()
 {
 	staticApp.stop();
 
@@ -84,7 +89,7 @@ void VGui_Shutdown( void )
 	surface = NULL;
 }
 
-void VGui_Paint( void )
+static void VGUI_Paint()
 {
 	int w, h;
 
@@ -116,32 +121,39 @@ void VGui_Paint( void )
 
 	EnableScissor( false );
 }
-void *VGui_GetPanel( void )
+
+static void *VGUI_GetPanel()
 {
 	return (void *)rootpanel;
-}
 }
 
 static vgui_support_interface_t vguifuncs =
 {
-	VGui_Startup,
-	VGui_Shutdown,
-	VGui_GetPanel,
-	VGui_Paint,
+	VGUI_Startup,
+	VGUI_Shutdown,
+	VGUI_GetPanel,
+	VGUI_Paint,
 	VGUI_Mouse,
 	VGUI_Key,
 	VGUI_MouseMove,
 	VGUI_TextInput,
-	VGui_ClientStartup
+	VGUI2_Startup
 };
 
-extern "C" int EXPORT GetVGUISupportAPI( int version, vgui_support_interface_t *iface, vgui_support_api_t *engfuncs )
+extern "C" int EXPORT GetVGUISupportAPI( int version,
+	vgui_support_interface_t *iface, vgui_support_api_t *engfuncs )
 {
+	static vgui_support_api_t api;
+
 	if( version != VGUI_SUPPORT_API_VERSION )
 		return 0;
 
-	g_api = engfuncs; // TODO: do not store the pointer
-	memcpy( iface, &vguifuncs, sizeof( vguifuncs ));
+	memcpy( &api, engfuncs, sizeof( api ));
+	g_api = &api;
+
+	memcpy( iface, &vguifuncs, sizeof( *iface ));
 
 	return VGUI_SUPPORT_API_VERSION;
 }
+
+} // namespace vgui_support

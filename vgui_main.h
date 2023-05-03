@@ -30,30 +30,54 @@ from your version.
 #else
 #include <string.h>
 #endif
-
 #include <assert.h>
-
+#include <VGUI.h>
+#include <VGUI_App.h>
+#include <VGUI_Font.h>
+#include <VGUI_Panel.h>
+#include <VGUI_Cursor.h>
+#include <VGUI_SurfaceBase.h>
+#include <VGUI_InputSignal.h>
+#include <VGUI_MouseCode.h>
+#include <VGUI_KeyCode.h>
+#include <VGUI2.h>
+#include <VGuiVertex.h>
 #include "vgui_api.h"
 
-#include<VGUI.h>
-#include<VGUI_App.h>
-#include<VGUI_Font.h>
-#include<VGUI_Panel.h>
-#include<VGUI_Cursor.h>
-#include<VGUI_SurfaceBase.h>
-#include<VGUI_InputSignal.h>
-#include<VGUI_MouseCode.h>
-#include<VGUI_KeyCode.h>
 
 namespace vgui_support
 {
 extern vgui_support_api_t *g_api;
 
-using namespace vgui;
+struct VGUIPanel
+{
+	VGUIPanel( vgui::Panel *pPanel )
+	{
+		this->pPanel = pPanel;
+		this->vgui2 = false;
+	}
+	VGUIPanel( vgui2::VPANEL vPanel )
+	{
+		this->vPanel = vPanel;
+		this->vgui2 = true;
+	}
+	VGUIPanel()
+	{
+		pPanel = nullptr;
+		vgui2 = false;
+	}
+
+	union
+	{
+		vgui::Panel *pPanel;
+		vgui2::VPANEL vPanel;
+	};
+	bool vgui2;
+};
 
 struct PaintStack
 {
-	Panel	*m_pPanel;
+	VGUIPanel panel;
 	int	iTranslateX;
 	int	iTranslateY;
 	int	iScissorLeft;
@@ -62,9 +86,68 @@ struct PaintStack
 	int	iScissorBottom;
 };
 
-class CEngineSurface : public SurfaceBase
+class CEngineSurface : public vgui::SurfaceBase
 {
+public:
+	CEngineSurface( vgui::Panel *embeddedPanel );
+	~CEngineSurface();
+
+	virtual bool setFullscreenMode( int wide, int tall, int bpp ) override;
+	virtual void setWindowedMode() override;
+	virtual void setTitle( const char *title ) override;
+	virtual void createPopup( vgui::Panel *embeddedPanel ) override;
+	virtual bool isWithin( int x, int y ) override;
+	virtual bool hasFocus() override;
+	virtual void GetMousePos( int &x, int &y ) override;
+
+	vgui::Panel *getEmbeddedPanel();
+	void drawPrintChar( int x, int y, int wide, int tall, float s0, float t0, float s1, float t1, int color[] );
+
+protected:
+	virtual int createNewTextureID() override;
+	virtual void drawSetColor( int r, int g, int b, int a ) override;
+	virtual void drawSetTextColor( int r, int g, int b, int a ) override;
+	virtual void drawFilledRect( int x0, int y0, int x1, int y1 ) override;
+	virtual void drawOutlinedRect( int x0, int y0, int x1, int y1 ) override;
+	virtual void drawSetTextFont( vgui::Font *font ) override;
+	virtual void drawSetTextPos( int x, int y ) override;
+	virtual void drawPrintText( const char *text, int textLen ) override;
+	virtual void drawSetTextureRGBA( int id, const char *rgba, int wide, int tall ) override;
+	virtual void drawSetTexture( int id ) override;
+	virtual void drawTexturedRect( int x0, int y0, int x1, int y1 ) override;
+	virtual void setCursor( vgui::Cursor *cursor ) override;
+	virtual void pushMakeCurrent( vgui::Panel *panel, bool useInsets ) override;
+	virtual void popMakeCurrent( vgui::Panel *panel ) override;
+	virtual void enableMouseCapture( bool state );
+	virtual void invalidate( vgui::Panel *panel );
+	virtual void setAsTopMost( bool state );
+	virtual void applyChanges();
+	virtual void swapBuffers();
+
 private:
+	void SetupPaintState( const PaintStack *paintState );
+	void InitVertex( vpoint_t &vertex, int x, int y, float u, float v );
+
+	// VGUI2 Surface funcs
+	void PushMakeCurrent( VGUIPanel panel, int insets[4], int absExtents[4], int clipRect[4] );
+	void PopMakeCurrent( VGUIPanel panel );
+	void drawLine( int x0, int y0, int x1, int y1 );
+	void drawPolyLine( int *px, int *py, int numPoints );
+	void drawGetTextPos( int &x, int &y );
+	void drawSetTextureFile( int id, const char *filename );
+	void drawGetTextureSize( int id, int &wide, int &tall );
+	vgui2::HFont createFont();
+	bool addGlyphSetToFont( vgui2::HFont font, const char *fontName, int tall, int weight, bool italic, bool underline, bool strikeout, bool symbol );
+	bool addCustomFontFile( const char *fontFileName );
+	int  getFontTall( vgui2::HFont font );
+	void getCharABCWide( vgui2::HFont font, int ch, int &a, int &b, int &c );
+	int  getCharWidth( vgui2::HFont font, int ch );
+	void getTextSize( vgui2::HFont font, const char *text, int &wide, int &tall );
+	void playSound( const char *filename );
+	void drawTexturedPolygon( vgui2::VGuiVertex *verts, int n );
+	int  getFontAscent( vgui2::HFont font, int ch );
+	bool deleteTextureByID( int id );
+	void drawSubTextureBGRA( int id, int x, int y, const byte *bgra, int wide, int tall );
 
 	// point translation for current panel
 	int		_translateX;
@@ -72,75 +155,25 @@ private:
 
 	// the size of the window to draw into
 	int		_surfaceExtents[4];
-
-	void SetupPaintState( const PaintStack *paintState );
-	void InitVertex( vpoint_t &vertex, int x, int y, float u, float v );
-public:
-	CEngineSurface( Panel *embeddedPanel );
-	~CEngineSurface();
-public:
-	virtual Panel *getEmbeddedPanel( void );
-	virtual bool setFullscreenMode( int wide, int tall, int bpp );
-	virtual void setWindowedMode( void );
-	virtual void setTitle( const char *title ) { }
-	virtual void createPopup( Panel* embeddedPanel ) { }
-	virtual bool isWithin( int x, int y ) { return true; }
-	virtual bool hasFocus( void );
-	// now it's not abstract class, yay
-	virtual void GetMousePos(int &x, int &y) {
-		g_api->GetCursorPos(&x, &y);
-	}
-	void drawPrintChar(int x, int y, int wide, int tall, float s0, float t0, float s1, float t1, int color[]);
 protected:
-	virtual int createNewTextureID( void );
-	virtual void drawSetColor( int r, int g, int b, int a );
-	virtual void drawSetTextColor( int r, int g, int b, int a );
-	virtual void drawFilledRect( int x0, int y0, int x1, int y1 );
-	virtual void drawOutlinedRect( int x0,int y0,int x1,int y1 );
-	virtual void drawSetTextFont( Font *font );
-	virtual void drawSetTextPos( int x, int y );
-	virtual void drawPrintText( const char* text, int textLen );
-	virtual void drawSetTextureRGBA( int id, const char* rgba, int wide, int tall );
-	virtual void drawSetTexture( int id );
-	virtual void drawTexturedRect( int x0, int y0, int x1, int y1 );
-	virtual bool createPlat( void ) { return false; }
-	virtual bool recreateContext( void ) { return false; }
-	virtual void setCursor( Cursor* cursor );
-	virtual void pushMakeCurrent( Panel* panel, bool useInsets );
-	virtual void popMakeCurrent( Panel* panel );
-
-	// not used in engine instance
-	virtual void enableMouseCapture( bool state ) { }
-	virtual void invalidate( Panel *panel ) { }
-	virtual void setAsTopMost( bool state ) { }
-	virtual void applyChanges( void ) { }
-	virtual void swapBuffers( void ) { }
-protected:
-	Cursor* _hCurrentCursor;
+	vgui::Cursor *_hCurrentCursor;
 	int _drawTextPos[2];
 	int _drawColor[4];
 	int _drawTextColor[4];
 	friend class App;
 	friend class Panel;
+	friend class VGUI2Surface;
 };
 
-// initialize VGUI::App as external (part of engine)
-class CEngineApp : public App
-{
-public:
-	CEngineApp( bool externalMain = true ) : App( externalMain ) { }
-	virtual void main( int argc, char* argv[] ) { } // stub
-};
+extern CEngineSurface *surface;
 
 //
 // vgui_input.cpp
 //
-void *VGui_GetPanel( void );
-void VGui_Paint( void );
-void VGUI_Mouse(VGUI_MouseAction action, int code);
-void VGUI_Key(VGUI_KeyAction action, VGUI_KeyCode code);
-void VGUI_MouseMove(int x, int y);
-void VGUI_TextInput(const char *text);
+void VGUI_Mouse( VGUI_MouseAction action, int code );
+void VGUI_Key( VGUI_KeyAction action, VGUI_KeyCode code );
+void VGUI_MouseMove( int x, int y );
+void VGUI_TextInput( const char *text );
 
 //
 // vgui_clip.cpp
@@ -149,8 +182,19 @@ void EnableScissor( qboolean enable );
 void SetScissorRect( int left, int top, int right, int bottom );
 qboolean ClipRect( const vpoint_t &inUL, const vpoint_t &inLR, vpoint_t *pOutUL, vpoint_t *pOutLR );
 
-extern CEngineSurface	*surface;
-extern Panel *root;
+//
+// vgui2_int.cpp
+//
+void VGUI2_Startup( void *clientlib, int width, int height );
+void VGUI2_Shutdown();
+bool VGUI2_UseVGUI1();
+void VGUI2_Paint();
+void VGUI2_ScreenSize( int &width, int &height );
+void VGUI2_Key( VGUI_KeyAction action, VGUI_KeyCode code );
+void VGUI2_Mouse( VGUI_MouseAction action, int code );
+void VGUI2_MouseMove( int x, int y );
+void VGUI2_TextInput( const char *text );
+
 }
-using namespace vgui_support;
-#endif//VGUI_MAIN_H
+
+#endif // VGUI_MAIN_H

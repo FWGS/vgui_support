@@ -23,21 +23,17 @@ from your version.
 
 */
 
-#include <port.h>
-#include <xash3d_types.h>
-#include "vgui2_surf.h"
-#include "vgui2_gameui.h"
+#include <crtlib.h>
 #include <Cursor.h>
 #include <IBaseUI.h>
 #include <IClientVGUI.h>
-#include <crtlib.h>
-#include <vgui_api.h>
+#include <port.h>
+#include "vgui_main.h"
+#include "vgui2_surf.h"
+#include "vgui2_gameui.h"
 
 namespace vgui_support
 {
-extern vgui_support_api_t *g_api;
-} // namespace vgui_support
-
 class RootPanel : public vgui2::Panel
 {
 public:
@@ -89,17 +85,17 @@ static GameUIFuncs gameUIFuncs;
 
 static inline void *LoadModule( const char *module )
 {
-	return vgui_support::g_api->LoadLibrary( module, false, false );
+	return g_api->LoadLibrary( module, false, false );
 }
 
 static inline CreateInterfaceFn GetFactory( void *module )
 {
-	return (CreateInterfaceFn)vgui_support::g_api->GetProcAddress( module, "CreateInterface" );
+	return (CreateInterfaceFn)g_api->GetProcAddress( module, "CreateInterface" );
 }
 
 static inline void UnloadModule( void *module )
 {
-	vgui_support::g_api->FreeLibrary( module );
+	g_api->FreeLibrary( module );
 }
 
 void BaseUI::Initialize( CreateInterfaceFn *factories, int count )
@@ -119,7 +115,7 @@ void BaseUI::Initialize( CreateInterfaceFn *factories, int count )
 	factoryList[numFactories++] = factories[1];
 	factoryList[numFactories++] = GetFactory( chromeModule );
 
-	if ( factories[2] != nullptr )
+	if( factories[2] != nullptr )
 	{
 		factoryList[numFactories++] = factories[2];
 		clientVGUI = (IClientVGUI *)factoryList[4]( VCLIENTVGUI_INTERFACE_VERSION, nullptr );
@@ -132,7 +128,7 @@ void BaseUI::Initialize( CreateInterfaceFn *factories, int count )
 
 void BaseUI::Start( int width, int height )
 {
-	if ( !initialized )
+	if( !initialized )
 		return;
 
 	rootPanel = new RootPanel( nullptr, "RootPanel" );
@@ -167,12 +163,12 @@ void BaseUI::Start( int width, int height )
 	vgui2::ivgui()->Start();
 	vgui2::ivgui()->SetSleep( false );
 
-	if ( clientVGUI )
+	if( clientVGUI )
 		clientVGUI->Initialize( factoryList, numFactories );
 
 	rootPanel->SetScheme( "ClientScheme" );
 
-	if ( clientVGUI )
+	if( clientVGUI )
 	{
 		clientVGUI->Start();
 		clientVGUI->SetParent( rootPanel->GetVPanel() );
@@ -183,13 +179,13 @@ void BaseUI::Start( int width, int height )
 
 void BaseUI::Shutdown()
 {
-	if ( !initialized )
+	if( !initialized )
 		return;
 
 	vgui2::ivgui()->RunFrame();
 	vgui2::ivgui()->Shutdown();
 
-	if ( clientVGUI )
+	if( clientVGUI )
 	{
 		clientVGUI->Shutdown();
 		clientVGUI = nullptr;
@@ -206,7 +202,7 @@ void BaseUI::Shutdown()
 
 int BaseUI::Key_Event( int down, int keynum, const char *pszCurrentBinding )
 {
-	if ( !initialized )
+	if( !initialized )
 		return 0;
 
 	return vgui2::surface()->NeedKBInput();
@@ -249,20 +245,23 @@ void BaseUI::ShowConsole()
 {
 }
 
-extern "C" EXPORT IBaseInterface *CreateInterface( const char *pName, int *pReturnCode )
+extern "C" EXPORT void *CreateInterface( const char *pName, int *pReturnCode )
 {
-	if ( pReturnCode ) *pReturnCode = IFACE_OK;
+	if( pReturnCode )
+		*pReturnCode = IFACE_OK;
 
-	if ( !Q_strcmp( pName, BASEUI_INTERFACE_VERSION ) )
-		return (IBaseUI *)&baseUI;
+	if( !Q_strcmp( pName, BASEUI_INTERFACE_VERSION ) )
+		return &baseUI;
 
-	if ( !Q_strcmp( pName, VGUI_SURFACE_INTERFACE_VERSION ) )
-		return (vgui2::ISurface *)&vgui2Surface;
+	if( !Q_strcmp( pName, VGUI_SURFACE_INTERFACE_VERSION ) )
+		return &vgui2Surface;
 
-	if ( !Q_strcmp( pName, VENGINE_GAMEUIFUNCS_VERSION ) )
-		return (IGameUIFuncs *)&gameUIFuncs;
+	if( !Q_strcmp( pName, VENGINE_GAMEUIFUNCS_VERSION ) )
+		return &gameUIFuncs;
 
-	if ( pReturnCode ) *pReturnCode = IFACE_FAILED;
+	if( pReturnCode )
+		*pReturnCode = IFACE_FAILED;
+
 	return nullptr;
 }
 
@@ -274,12 +273,14 @@ void VGUI2_Startup( void *clientInstance, int width, int height )
 		auto fileSystemFactory = GetFactory( fileSystemModule );
 		fileSystem = (IVFileSystem009 *)fileSystemFactory( FILESYSTEM_INTERFACE_VERSION, nullptr );
 
-		CreateInterfaceFn factories[3];
-		factories[0] = CreateInterface;
-		factories[1] = fileSystemFactory;
-		factories[2] = GetFactory( clientInstance );
+		CreateInterfaceFn factories[] =
+		{
+			CreateInterface,
+			fileSystemFactory,
+			GetFactory( clientInstance )
+		};
 
-		baseUI.Initialize( factories, 3 );
+		baseUI.Initialize( factories, sizeof( factories ) / sizeof( factories[0] ));
 		baseUI.Start( width, height );
 	}
 
@@ -312,7 +313,7 @@ bool VGUI2_UseVGUI1( void )
 
 void VGUI2_Paint( void )
 {
-	if ( rootPanel == nullptr )
+	if( rootPanel == nullptr )
 		return;
 
 	int wide, tall;
@@ -322,10 +323,10 @@ void VGUI2_Paint( void )
 
 void VGUI2_Key( VGUI_KeyAction action, VGUI_KeyCode code )
 {
-	if ( rootPanel == nullptr )
+	if( rootPanel == nullptr )
 		return;
 
-	if ( !baseUI.Key_Event( action == KA_PRESSED, code + 1, "" ) )
+	if( !baseUI.Key_Event( action == KA_PRESSED, code + 1, "" ) )
 		return;
 
 	switch ( action )
@@ -344,10 +345,10 @@ void VGUI2_Key( VGUI_KeyAction action, VGUI_KeyCode code )
 
 void VGUI2_Mouse( VGUI_MouseAction action, int code )
 {
-	if ( rootPanel == nullptr )
+	if( rootPanel == nullptr )
 		return;
 
-	if ( !vgui2::surface()->IsCursorVisible() )
+	if( !vgui2::surface()->IsCursorVisible() )
 		return;
 
 	switch ( action )
@@ -369,7 +370,7 @@ void VGUI2_Mouse( VGUI_MouseAction action, int code )
 
 void VGUI2_MouseMove( int x, int y )
 {
-	if ( rootPanel == nullptr )
+	if( rootPanel == nullptr )
 		return;
 
 	vgui2::inputinternal()->InternalCursorMoved( x, y );
@@ -377,6 +378,7 @@ void VGUI2_MouseMove( int x, int y )
 
 void VGUI2_TextInput( const char *text )
 {
-	for ( const char *c = text; *c; c++ )
+	for( const char *c = text; *c; c++ )
 		vgui2::inputinternal()->InternalKeyTyped( *c );
 }
+} // namespace vgui_support

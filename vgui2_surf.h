@@ -31,6 +31,8 @@ from your version.
 #include <IChromeHTMLWrapper.h>
 #include <VGUI_Dar.h>
 
+namespace vgui_support
+{
 class VGUI2Surface : public vgui2::ISurface
 {
 public:
@@ -156,5 +158,6 @@ private:
 	bool ignoreMouseVisCalc;
 	vgui2::HCursor currentCursor;
 };
+} // vgui_support
 
 #endif // VGUI2_SURFACE_H
