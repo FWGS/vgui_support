@@ -139,6 +139,7 @@ private:
 	vgui2::HFont createFont();
 	bool addGlyphSetToFont( vgui2::HFont font, const char *fontName, int tall, int weight, bool italic, bool underline, bool strikeout, bool symbol );
 	bool addCustomFontFile( const char *fontFileName );
+	void drawSetTextFont( vgui2::HFont font );
 	int  getFontTall( vgui2::HFont font );
 	void getCharABCWide( vgui2::HFont font, int ch, int &a, int &b, int &c );
 	int  getCharWidth( vgui2::HFont font, int ch );
@@ -147,7 +148,7 @@ private:
 	void drawTexturedPolygon( vgui2::VGuiVertex *verts, int n );
 	int  getFontAscent( vgui2::HFont font, int ch );
 	bool deleteTextureByID( int id );
-	void drawSubTextureBGRA( int id, int x, int y, const byte *bgra, int wide, int tall );
+	void drawSubTextureRGBA( int id, int x, int y, const byte *bgra, int wide, int tall );
 
 	// point translation for current panel
 	int		_translateX;

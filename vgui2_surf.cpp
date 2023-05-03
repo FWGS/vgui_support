@@ -85,12 +85,14 @@ void VGUI2Surface::PopMakeCurrent( vgui2::VPANEL panel )
 
 void VGUI2Surface::DrawSetColor( int r, int g, int b, int a )
 {
-	surface->drawSetColor( r, g, b, a );
+	// VGUI2 inverts alpha
+
+	surface->drawSetColor( r, g, b, 255 - a );
 }
 
 void VGUI2Surface::DrawSetColor( Color col )
 {
-	surface->drawSetColor( col[0], col[1], col[2], col[3] );
+	DrawSetColor( col[0], col[1], col[2], col[3] );
 }
 
 void VGUI2Surface::DrawFilledRect( int x0, int y0, int x1, int y1 )
@@ -115,20 +117,17 @@ void VGUI2Surface::DrawPolyLine( int *px, int *py, int numPoints )
 
 void VGUI2Surface::DrawSetTextFont( vgui2::HFont font )
 {
-	if( font == -1 )
-		return;
-
-	surface->drawSetTextFont((vgui::Font *)font );
+	surface->drawSetTextFont( font );
 }
 
 void VGUI2Surface::DrawSetTextColor( int r, int g, int b, int a )
 {
-	surface->drawSetTextColor( r, g, b, a );
+	surface->drawSetTextColor( r, g, b, 255 - a );
 }
 
 void VGUI2Surface::DrawSetTextColor( Color col )
 {
-	surface->drawSetTextColor( col[0], col[1], col[2], col[3] );
+	DrawSetTextColor( col[0], col[1], col[2], col[3] );
 }
 
 void VGUI2Surface::DrawSetTextPos( int x, int y )
@@ -610,8 +609,8 @@ void VGUI2Surface::CalculateMouseVisible()
 			continue;
 
 		// TODO: Uncomment these once fully implemented to enable input capture
-		// needMouse = needMouse || vgui2::ipanel()->IsMouseInputEnabled( popups[i] );
-		// needKB = needKB || vgui2::ipanel()->IsKeyBoardInputEnabled( popups[i] );
+		needMouse = needMouse || vgui2::ipanel()->IsMouseInputEnabled( popups[i] );
+		needKB = needKB || vgui2::ipanel()->IsKeyBoardInputEnabled( popups[i] );
 	}
 
 	UnlockCursor();
@@ -684,9 +683,18 @@ bool VGUI2Surface::DeleteTextureByID( int id )
 	return surface->deleteTextureByID( id );
 }
 
-void VGUI2Surface::DrawUpdateRegionTextureBGRA( int nTextureID, int x, int y, const unsigned char *pchData, int wide, int tall )
+void VGUI2Surface::DrawUpdateRegionTextureBGRA( int id, int x, int y, const unsigned char *bgra, int wide, int tall )
 {
-	surface->drawSubTextureBGRA( nTextureID, x, y, pchData, wide, tall );
+	auto p = new unsigned char[wide * tall * 4];
+	for( int i = 0; i < wide * tall * 4; i += 4 )
+	{
+		p[i + 0] = bgra[i + 2];
+		p[i + 1] = bgra[i + 1];
+		p[i + 2] = bgra[i + 0];
+		p[i + 3] = bgra[i + 3];
+	}
+	surface->drawSubTextureRGBA( id, x, y, p, wide, tall );
+	delete[] p;
 }
 
 void VGUI2Surface::DrawSetTextureBGRA( int id, const unsigned char *bgra, int wide, int tall )

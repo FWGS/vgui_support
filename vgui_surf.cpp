@@ -24,6 +24,7 @@ from your version.
 */
 
 #include <ctype.h>
+#include <crtlib.h>
 #include "vgui_main.h"
 
 #define MAX_PAINT_STACK	16
@@ -306,11 +307,11 @@ void CEngineSurface::drawPrintText( const char* text, int textLen )
 	int j, iTotalWidth = 0;
 	int curTextColor[4];
 
-	//  HACKHACK: allow color strings in VGUI
+	// HACKHACK: allow color strings in VGUI
 	if( numColor != 7 )
 	{
 		for( j = 0; j < 3; j++ ) // grab predefined color
-			curTextColor[j] = g_api->GetColor(numColor,j);
+			curTextColor[j] = g_api->GetColor( numColor, j );
 	}
 	else
 	{
@@ -326,7 +327,8 @@ void CEngineSurface::drawPrintText( const char* text, int textLen )
 			hasColor = true;
 			return; // skip '^'
 		}
-		else if( hasColor && isdigit( *text ))
+
+		if( hasColor && isdigit( *text ))
 		{
 			numColor = ColorIndex( *text );
 			hasColor = false; // handled
@@ -334,13 +336,16 @@ void CEngineSurface::drawPrintText( const char* text, int textLen )
 		}
 		else hasColor = false;
 	}
+
+	// reset
+	g_api->ProcessUtfChar( 0 );
+
 	for( int i = 0; i < textLen; i++ )
 	{
 		int curCh = g_api->ProcessUtfChar( (unsigned char)text[i] );
+
 		if( !curCh )
-		{
 			continue;
-		}
 
 		int abcA, abcB, abcC;
 
@@ -512,27 +517,32 @@ void CEngineSurface::PopMakeCurrent( VGUIPanel p )
 
 void CEngineSurface::drawLine( int x0, int y0, int x1, int y1 )
 {
-
+	// TODO: implement this
+	// will require updating RefAPI or implement VGUI drawing
+	// through TriAPI?
 }
 
 void CEngineSurface::drawPolyLine( int *px, int *py, int numPoints )
 {
-
+	// TODO: see drawLine comment
 }
 
 void CEngineSurface::drawGetTextPos( int &x, int &y )
 {
-
+	x = _drawTextPos[0];
+	y = _drawTextPos[1];
 }
 
 void CEngineSurface::drawSetTextureFile( int id, const char *filename )
 {
-
+	g_api->BindTexture( id );
+	g_api->UploadTextureFile( id, filename );
 }
 
 void CEngineSurface::drawGetTextureSize( int id, int &wide, int &tall )
 {
-
+	g_api->BindTexture( id );
+	g_api->GetTextureSizes( &wide, &tall );
 }
 
 vgui2::HFont CEngineSurface::createFont()
@@ -550,9 +560,15 @@ bool CEngineSurface::addCustomFontFile( const char *fontFileName )
 	return false;
 }
 
+void CEngineSurface::drawSetTextFont( vgui2::HFont font )
+{
+	// TODO: use mainui_cpp font renderer here
+}
+
 int  CEngineSurface::getFontTall( vgui2::HFont font )
 {
-	return 0;
+	// add random tall
+	return 32;
 }
 
 void CEngineSurface::getCharABCWide( vgui2::HFont font, int ch, int &a, int &b, int &c )
@@ -562,32 +578,41 @@ void CEngineSurface::getCharABCWide( vgui2::HFont font, int ch, int &a, int &b, 
 
 void CEngineSurface::getTextSize( vgui2::HFont font, const char *text, int &wide, int &tall )
 {
-	wide = tall = 1;
+	int lines = 0;
+	for( const char *p = text; *p; p = Q_strchrnul( p, '\n' ))
+		lines++;
+
+	// TODO: add some height because client.dll uses this function to determine
+	// engine string drawing functions height (as GoldSrc uses VGUI2 internally anyway)
+	// this will be rewritten to real function later
+	tall = lines * getFontTall( font );
+	wide = 1;
 }
 
 void CEngineSurface::playSound( const char *filename )
 {
-
+	g_api->StartSound( filename );
 }
 
 void CEngineSurface::drawTexturedPolygon( vgui2::VGuiVertex *verts, int n )
 {
-
+	// TODO: see drawLine comment
 }
 
 int CEngineSurface::getFontAscent( vgui2::HFont font, int ch )
 {
-	return 0;
+	return getFontTall( font ) * 0.8;
 }
 
 bool CEngineSurface::deleteTextureByID( int id )
 {
+	// TODO: see drawLine comment
 	return false;
 }
 
-void CEngineSurface::drawSubTextureBGRA( int id, int x, int y, const byte *bgra, int wide, int tall )
+void CEngineSurface::drawSubTextureRGBA( int id, int x, int y, const byte *rgba, int wide, int tall )
 {
-
+	g_api->UploadTextureBlock( id, x, y, rgba, wide, tall );
 }
 
 
