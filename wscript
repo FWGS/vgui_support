@@ -48,7 +48,7 @@ def build(bld):
 		features = 'cxx',
 		includes = includes,
 		use      = libs,
-		rpath    = '$ORIGIN',
+		rpath    = bld.env.DEFAULT_RPATH,
 		install_path = bld.env.LIBDIR,
 		subsystem = bld.env.MSVC_SUBSYSTEM
 	)
