@@ -32,6 +32,12 @@ from your version.
 
 struct FontInfo
 {
+	FontInfo( int id, int contextCount ) : id( id ), pageCount(),
+		pageForChar(), bindIndex(), contextCount( contextCount )
+	{
+
+	}
+
 	int	id;
 	int	pageCount;
 	int	pageForChar[256];
@@ -188,18 +194,8 @@ void CEngineSurface :: drawSetTextFont( Font *font )
 
 		if( !staticFontInfo || buildFont )
 		{
-			staticFontInfo = new FontInfo;
-			staticFontInfo->id = 0;
-			staticFontInfo->pageCount = 0;
-			staticFontInfo->bindIndex[0] = 0;
-			staticFontInfo->bindIndex[1] = 0;
-			staticFontInfo->bindIndex[2] = 0;
-			staticFontInfo->bindIndex[3] = 0;
-			memset( staticFontInfo->pageForChar, 0, sizeof( staticFontInfo->pageForChar ));
-			staticFontInfo->contextCount = -1;
-			staticFontInfo->id = staticFont->getId();
+			staticFontInfo = new FontInfo( staticFont->getId(), staticContextCount );
 			staticFontInfoDar.putElement( staticFontInfo );
-			staticFontInfo->contextCount = staticContextCount;
 
 			int currentPage = 0;
 			int x = 0, y = 0;
