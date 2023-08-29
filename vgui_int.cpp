@@ -25,18 +25,38 @@ from your version.
 
 #include "vgui_main.h"
 #include "xash3d_types.h"
-namespace vgui_support {
 
-vguiapi_t *g_api;
+using namespace vgui;
 
-Panel	*rootpanel = NULL;
-CEngineSurface	*surface = NULL;
-CEngineApp          staticApp;
+namespace vgui_support
+{
+vgui_support_api_t *g_api;
+CEngineSurface *surface = nullptr;
 
-void VGui_Startup( int width, int height )
+static Panel *rootpanel = nullptr;
+static class CEngineApp : public App
+{
+public:
+	explicit CEngineApp( bool externalMain = true );
+	void main( int argc, char *argv[] ) override;
+} staticApp;
+
+CEngineApp::CEngineApp( bool externalMain ) :
+	App( externalMain )
+{
+
+}
+
+void CEngineApp::main( int argc, char *argv[] )
+{
+
+}
+
+static void VGUI_Startup( int width, int height )
 {
 	if( rootpanel )
 	{
+		VGUI2_Startup( NULL, width, height );
 		rootpanel->setSize( width, height );
 		return;
 	}
@@ -52,16 +72,13 @@ void VGui_Startup( int width, int height )
 	staticApp.setMinimumTickMillisInterval( 0 );
 
 	surface = new CEngineSurface( rootpanel );
+
 	rootpanel->setSurfaceBaseTraverse( surface );
 
-
-	//ASSERT( rootpanel->getApp() != NULL );
-	//ASSERT( rootpanel->getSurfaceBase() != NULL );
-
-	g_api->DrawInit ();
+	g_api->DrawInit();
 }
 
-void VGui_Shutdown( void )
+static void VGUI_Shutdown()
 {
 	staticApp.stop();
 
@@ -72,52 +89,71 @@ void VGui_Shutdown( void )
 	surface = NULL;
 }
 
-void VGui_Paint( void )
+static void VGUI_Paint()
 {
 	int w, h;
 
-	//if( cls.state != ca_active || !rootpanel )
-	//	return;
 	if( !g_api->IsInGame() || !rootpanel )
 		return;
 
 	// setup the base panel to cover the screen
 	Panel *pVPanel = surface->getEmbeddedPanel();
-	if( !pVPanel ) return;
-	//SDL_GetWindowSize(host.hWnd, &w, &h);
-	//host.input_enabled = rootpanel->isVisible();
+	if( !pVPanel )
+		return;
+
 	rootpanel->getSize(w, h);
 	EnableScissor( true );
 
-	staticApp.externalTick ();
+	if( VGUI2_UseVGUI1( ))
+	{
+		staticApp.externalTick ();
 
-	pVPanel->setBounds( 0, 0, w, h );
-	pVPanel->repaint();
+		pVPanel->setBounds( 0, 0, w, h );
+		pVPanel->repaint();
 
-	// paint everything 
-	pVPanel->paintTraverse();
+		// paint everything
+		pVPanel->paintTraverse();
+	}
+	else
+	{
+		VGUI2_Paint();
+	}
 
 	EnableScissor( false );
 }
-void *VGui_GetPanel( void )
+
+static void *VGUI_GetPanel()
 {
 	return (void *)rootpanel;
 }
-}
 
-#ifdef INTERNAL_VGUI_SUPPORT
-#define InitAPI InitVGUISupportAPI
-#endif
-
-extern "C" EXPORT void InitAPI(vguiapi_t * api)
+static vgui_support_interface_t vguifuncs =
 {
-	g_api = api;
-	g_api->Startup = VGui_Startup;
-	g_api->Shutdown = VGui_Shutdown;
-	g_api->GetPanel = VGui_GetPanel;
-	g_api->Paint = VGui_Paint;
-	g_api->Mouse = VGUI_Mouse;
-	g_api->MouseMove = VGUI_MouseMove;
-	g_api->Key = VGUI_Key;
-	g_api->TextInput = VGUI_TextInput;
+	VGUI_Startup,
+	VGUI_Shutdown,
+	VGUI_GetPanel,
+	VGUI_Paint,
+	VGUI_Mouse,
+	VGUI_Key,
+	VGUI_MouseMove,
+	VGUI_TextInput,
+	VGUI2_Startup
+};
+
+extern "C" int EXPORT GetVGUISupportAPI( int version,
+	vgui_support_interface_t *iface, vgui_support_api_t *engfuncs )
+{
+	static vgui_support_api_t api;
+
+	if( version != VGUI_SUPPORT_API_VERSION )
+		return 0;
+
+	memcpy( &api, engfuncs, sizeof( api ));
+	g_api = &api;
+
+	memcpy( iface, &vguifuncs, sizeof( *iface ));
+
+	return VGUI_SUPPORT_API_VERSION;
 }
+
+} // namespace vgui_support

@@ -12,6 +12,8 @@ VGUI_SUPPORTED_OS = ['win32', 'darwin', 'linux']
 def options(opt):
 	grp = opt.add_option_group('VGUI options')
 
+	vgui2_dev_path = os.path.join(opt.path.path_from(opt.root), 'vgui2-dev')
+
 	grp.add_option('--disable-vgui', action = 'store_true', dest = 'NO_VGUI', default = False,
 		help = 'disable vgui_support [default: %default]')
 
@@ -30,7 +32,7 @@ def build(bld):
 	if bld.env.NO_VGUI:
 		return
 
-	libs = [ 'sdk_includes' ]
+	libs = [ 'public', 'filesystem_includes' ]
 
 	# basic build: dedicated only, no dependencies
 	if bld.env.DEST_OS != 'win32':
@@ -38,9 +40,8 @@ def build(bld):
 
 	libs.append('VGUI')
 
-	source = bld.path.ant_glob(['*.cpp'])
-
-	includes = [ '.' ]
+	source = bld.path.ant_glob(['*.cpp', 'vgui2-dev/src/*.cpp'])
+	includes = [ '.', 'vgui2-dev/include' ]
 
 	bld.shlib(
 		source   = source,

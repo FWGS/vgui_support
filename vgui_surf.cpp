@@ -24,11 +24,15 @@ from your version.
 */
 
 #include <ctype.h>
+#include <crtlib.h>
 #include "vgui_main.h"
 
 #define MAX_PAINT_STACK	16
 #define FONT_SIZE		512
 #define FONT_PAGES	8
+
+using namespace vgui_support;
+using namespace vgui;
 
 struct FontInfo
 {
@@ -56,7 +60,8 @@ static int staticPaintStackPos = 0;
 
 #define ColorIndex( c )((( c ) - '0' ) & 7 )
 
-CEngineSurface :: CEngineSurface( Panel *embeddedPanel ):SurfaceBase( embeddedPanel )
+CEngineSurface::CEngineSurface( Panel *embeddedPanel ) :
+	SurfaceBase( embeddedPanel )
 {
 	_embeddedPanel = embeddedPanel;
 	_drawColor[0] = _drawColor[1] = _drawColor[2] = _drawColor[3] = 255;
@@ -78,24 +83,22 @@ CEngineSurface :: CEngineSurface( Panel *embeddedPanel ):SurfaceBase( embeddedPa
 	_translateX = _translateY = 0;
 }
 
-CEngineSurface :: ~CEngineSurface( void )
+CEngineSurface::~CEngineSurface( void )
 {
 	g_api->DrawShutdown ();
 }
 
-Panel *CEngineSurface :: getEmbeddedPanel( void )
+Panel *CEngineSurface::getEmbeddedPanel( void )
 {
 	return _embeddedPanel;
 }
 
-bool CEngineSurface :: hasFocus( void )
+bool CEngineSurface::hasFocus( void )
 {
-	// What differs when window does not has focus?
-	//return host.state != HOST_NOFOCUS;
 	return true;
 }
 	
-void CEngineSurface :: setCursor( Cursor *cursor )
+void CEngineSurface::setCursor( Cursor *cursor )
 {
 	_currentCursor = cursor;
 
@@ -105,7 +108,7 @@ void CEngineSurface :: setCursor( Cursor *cursor )
 	}
 }
 
-void CEngineSurface :: SetupPaintState( const PaintStack *paintState )
+void CEngineSurface::SetupPaintState( const PaintStack *paintState )
 {
 	_translateX = paintState->iTranslateX;
 	_translateY = paintState->iTranslateY;
@@ -113,7 +116,7 @@ void CEngineSurface :: SetupPaintState( const PaintStack *paintState )
 		paintState->iScissorRight, paintState->iScissorBottom );
 }
 
-void CEngineSurface :: InitVertex( vpoint_t &vertex, int x, int y, float u, float v )
+void CEngineSurface::InitVertex( vpoint_t &vertex, int x, int y, float u, float v )
 {
 	vertex.point[0] = x + _translateX;
 	vertex.point[1] = y + _translateY;
@@ -121,12 +124,12 @@ void CEngineSurface :: InitVertex( vpoint_t &vertex, int x, int y, float u, floa
 	vertex.coord[1] = v;
 }
 
-int CEngineSurface :: createNewTextureID( void )
+int CEngineSurface::createNewTextureID( void )
 {
 	return g_api->GenerateTexture();
 }
 
-void CEngineSurface :: drawSetColor( int r, int g, int b, int a )
+void CEngineSurface::drawSetColor( int r, int g, int b, int a )
 {
 	_drawColor[0] = r;
 	_drawColor[1] = g;
@@ -134,7 +137,7 @@ void CEngineSurface :: drawSetColor( int r, int g, int b, int a )
 	_drawColor[3] = a;
 }
 
-void CEngineSurface :: drawSetTextColor( int r, int g, int b, int a )
+void CEngineSurface::drawSetTextColor( int r, int g, int b, int a )
 {
 	_drawTextColor[0] = r;
 	_drawTextColor[1] = g;
@@ -142,7 +145,7 @@ void CEngineSurface :: drawSetTextColor( int r, int g, int b, int a )
 	_drawTextColor[3] = a;
 }
 
-void CEngineSurface :: drawFilledRect( int x0, int y0, int x1, int y1 )
+void CEngineSurface::drawFilledRect( int x0, int y0, int x1, int y1 )
 {
 	vpoint_t rect[2];
 	vpoint_t clippedRect[2];
@@ -162,7 +165,7 @@ void CEngineSurface :: drawFilledRect( int x0, int y0, int x1, int y1 )
 	g_api->EnableTexture( true );
 }
 
-void CEngineSurface :: drawOutlinedRect( int x0, int y0, int x1, int y1 )
+void CEngineSurface::drawOutlinedRect( int x0, int y0, int x1, int y1 )
 {
 	if( _drawColor[3] >= 255 ) return;
 
@@ -172,7 +175,7 @@ void CEngineSurface :: drawOutlinedRect( int x0, int y0, int x1, int y1 )
 	drawFilledRect( x1 - 1, y0 + 1, x1, y1 - 1 );	// right
 }
 	
-void CEngineSurface :: drawSetTextFont( Font *font )
+void CEngineSurface::drawSetTextFont( Font *font )
 {
 	staticFont = font;
 
@@ -253,13 +256,13 @@ void CEngineSurface :: drawSetTextFont( Font *font )
 	}
 }
 
-void CEngineSurface :: drawSetTextPos( int x, int y )
+void CEngineSurface::drawSetTextPos( int x, int y )
 {
 	_drawTextPos[0] = x;
 	_drawTextPos[1] = y;
 }
 
-void CEngineSurface :: drawPrintChar( int x, int y, int wide, int tall, float s0, float t0, float s1, float t1, int color[4] )
+void CEngineSurface::drawPrintChar( int x, int y, int wide, int tall, float s0, float t0, float s1, float t1, int color[4] )
 {
 	vpoint_t	ul, lr;
 
@@ -283,7 +286,7 @@ void CEngineSurface :: drawPrintChar( int x, int y, int wide, int tall, float s0
 	g_api->DrawQuad( &clippedRect[0], &clippedRect[1] ); // draw the letter
 }
 
-void CEngineSurface :: drawPrintText( const char* text, int textLen )
+void CEngineSurface::drawPrintText( const char* text, int textLen )
 {
 	//return;
 	static bool hasColor = 0;
@@ -300,11 +303,11 @@ void CEngineSurface :: drawPrintText( const char* text, int textLen )
 	int j, iTotalWidth = 0;
 	int curTextColor[4];
 
-	//  HACKHACK: allow color strings in VGUI
+	// HACKHACK: allow color strings in VGUI
 	if( numColor != 7 )
 	{
 		for( j = 0; j < 3; j++ ) // grab predefined color
-			curTextColor[j] = g_api->GetColor(numColor,j);
+			curTextColor[j] = g_api->GetColor( numColor, j );
 	}
 	else
 	{
@@ -320,7 +323,8 @@ void CEngineSurface :: drawPrintText( const char* text, int textLen )
 			hasColor = true;
 			return; // skip '^'
 		}
-		else if( hasColor && isdigit( *text ))
+
+		if( hasColor && isdigit( *text ))
 		{
 			numColor = ColorIndex( *text );
 			hasColor = false; // handled
@@ -328,13 +332,16 @@ void CEngineSurface :: drawPrintText( const char* text, int textLen )
 		}
 		else hasColor = false;
 	}
+
+	// reset
+	g_api->ProcessUtfChar( 0 );
+
 	for( int i = 0; i < textLen; i++ )
 	{
 		int curCh = g_api->ProcessUtfChar( (unsigned char)text[i] );
+
 		if( !curCh )
-		{
 			continue;
-		}
 
 		int abcA, abcB, abcC;
 
@@ -355,17 +362,17 @@ void CEngineSurface :: drawPrintText( const char* text, int textLen )
 	_drawTextPos[0] += iTotalWidth;
 }
 
-void CEngineSurface :: drawSetTextureRGBA( int id, const char* rgba, int wide, int tall )
+void CEngineSurface::drawSetTextureRGBA( int id, const char* rgba, int wide, int tall )
 {
 	g_api->UploadTexture( id, rgba, wide, tall );
 }
 	
-void CEngineSurface :: drawSetTexture( int id )
+void CEngineSurface::drawSetTexture( int id )
 {
 	g_api->BindTexture( id );
 }
 	
-void CEngineSurface :: drawTexturedRect( int x0, int y0, int x1, int y1 )
+void CEngineSurface::drawTexturedRect( int x0, int y0, int x1, int y1 )
 {
 	vpoint_t rect[2];
 	vpoint_t clippedRect[2];
@@ -381,7 +388,7 @@ void CEngineSurface :: drawTexturedRect( int x0, int y0, int x1, int y1 )
 	g_api->DrawQuad( &clippedRect[0], &clippedRect[1] );
 }
 	
-void CEngineSurface :: pushMakeCurrent( Panel* panel, bool useInsets )
+void CEngineSurface::pushMakeCurrent( Panel* panel, bool useInsets )
 {
 	int insets[4] = { 0, 0, 0, 0 };
 	int absExtents[4];
@@ -392,11 +399,83 @@ void CEngineSurface :: pushMakeCurrent( Panel* panel, bool useInsets )
 	panel->getAbsExtents( absExtents[0], absExtents[1], absExtents[2], absExtents[3] );
 	panel->getClipRect( clipRect[0], clipRect[1], clipRect[2], clipRect[3] );
 
+	VGUIPanel p( panel );
+	PushMakeCurrent( p, insets, absExtents, clipRect );
+}
+	
+void CEngineSurface::popMakeCurrent( Panel *panel )
+{
+	VGUIPanel p( panel );
+	PopMakeCurrent( p );
+}
+
+void CEngineSurface::GetMousePos( int &x, int &y )
+{
+	g_api->GetCursorPos( &x, &y );
+}
+
+bool CEngineSurface::setFullscreenMode( int wide, int tall, int bpp )
+{
+	// stub
+	return false;
+}
+	
+void CEngineSurface::setWindowedMode( void )
+{
+	// stub
+}
+
+void CEngineSurface::setTitle( const char *title )
+{
+	// stub
+}
+
+void CEngineSurface::createPopup( vgui::Panel *embeddedPanel )
+{
+	// stub
+}
+
+bool CEngineSurface::isWithin( int x, int y )
+{
+	// stub
+	return true;
+}
+
+void CEngineSurface::enableMouseCapture( bool state )
+{
+	// stub
+}
+
+void CEngineSurface::invalidate( vgui::Panel *panel )
+{
+	// stub
+}
+
+void CEngineSurface::setAsTopMost( bool state )
+{
+	// stub
+}
+
+void CEngineSurface::applyChanges()
+{
+	// stub
+}
+
+void CEngineSurface::swapBuffers()
+{
+	// stub
+}
+
+//
+// VGUI2 extended surface
+//
+void CEngineSurface::PushMakeCurrent( VGUIPanel panel, int insets[4], int absExtents[4], int clipRect[4] )
+{
 	PaintStack *paintState = &paintStack[staticPaintStackPos];
 
 	assert( staticPaintStackPos < MAX_PAINT_STACK );
 
-	paintState->m_pPanel = panel;
+	paintState->panel = panel;
 
 	// determine corrected top left origin
 	paintState->iTranslateX = insets[0] + absExtents[0];
@@ -408,29 +487,128 @@ void CEngineSurface :: pushMakeCurrent( Panel* panel, bool useInsets )
 	paintState->iScissorBottom = clipRect[3];
 
 	SetupPaintState( paintState );
+
 	staticPaintStackPos++;
 }
-	
-void CEngineSurface :: popMakeCurrent( Panel *panel )
+
+void CEngineSurface::PopMakeCurrent( VGUIPanel p )
 {
 	int top = staticPaintStackPos - 1;
 
 	// more pops that pushes?
 	assert( top >= 0 );
 
+	// a1ba: replace asserts by proper checks!!!
 	// didn't pop in reverse order of push?
-	assert( paintStack[top].m_pPanel == panel );
+	assert( paintStack[top].panel.vgui2 == p.vgui2 );
+	if( p.vgui2 )
+		assert( paintStack[top].panel.vPanel == p.vPanel );
+	else
+		assert( paintStack[top].panel.pPanel == p.pPanel );
 
 	staticPaintStackPos--;
 
 	if( top > 0 ) SetupPaintState( &paintStack[top-1] );
 }
 
-bool CEngineSurface :: setFullscreenMode( int wide, int tall, int bpp )
+void CEngineSurface::drawLine( int x0, int y0, int x1, int y1 )
+{
+	// TODO: implement this
+	// will require updating RefAPI or implement VGUI drawing
+	// through TriAPI?
+}
+
+void CEngineSurface::drawPolyLine( int *px, int *py, int numPoints )
+{
+	// TODO: see drawLine comment
+}
+
+void CEngineSurface::drawGetTextPos( int &x, int &y )
+{
+	x = _drawTextPos[0];
+	y = _drawTextPos[1];
+}
+
+void CEngineSurface::drawSetTextureFile( int id, const char *filename )
+{
+	g_api->BindTexture( id );
+	g_api->UploadTextureFile( id, filename );
+}
+
+void CEngineSurface::drawGetTextureSize( int id, int &wide, int &tall )
+{
+	g_api->BindTexture( id );
+	g_api->GetTextureSizes( &wide, &tall );
+}
+
+vgui2::HFont CEngineSurface::createFont()
+{
+	return -1;
+}
+
+bool CEngineSurface::addGlyphSetToFont( vgui2::HFont font, const char *fontName, int tall, int weight, bool italic, bool underline, bool strikeout, bool symbol )
 {
 	return false;
 }
-	
-void CEngineSurface :: setWindowedMode( void )
+
+bool CEngineSurface::addCustomFontFile( const char *fontFileName )
 {
+	return false;
 }
+
+void CEngineSurface::drawSetTextFont( vgui2::HFont font )
+{
+	// TODO: use mainui_cpp font renderer here
+}
+
+int  CEngineSurface::getFontTall( vgui2::HFont font )
+{
+	// add random tall
+	return 32;
+}
+
+void CEngineSurface::getCharABCWide( vgui2::HFont font, int ch, int &a, int &b, int &c )
+{
+	a = b = c = 1;
+}
+
+void CEngineSurface::getTextSize( vgui2::HFont font, const char *text, int &wide, int &tall )
+{
+	int lines = 0;
+	for( const char *p = text; *p; p = Q_strchrnul( p, '\n' ))
+		lines++;
+
+	// TODO: add some height because client.dll uses this function to determine
+	// engine string drawing functions height (as GoldSrc uses VGUI2 internally anyway)
+	// this will be rewritten to real function later
+	tall = lines * getFontTall( font );
+	wide = 1;
+}
+
+void CEngineSurface::playSound( const char *filename )
+{
+	g_api->StartSound( filename );
+}
+
+void CEngineSurface::drawTexturedPolygon( vgui2::VGuiVertex *verts, int n )
+{
+	// TODO: see drawLine comment
+}
+
+int CEngineSurface::getFontAscent( vgui2::HFont font, int ch )
+{
+	return getFontTall( font ) * 0.8;
+}
+
+bool CEngineSurface::deleteTextureByID( int id )
+{
+	// TODO: see drawLine comment
+	return false;
+}
+
+void CEngineSurface::drawSubTextureRGBA( int id, int x, int y, const byte *rgba, int wide, int tall )
+{
+	g_api->UploadTextureBlock( id, x, y, rgba, wide, tall );
+}
+
+
