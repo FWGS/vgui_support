@@ -30,7 +30,7 @@ def build(bld):
 	if bld.env.NO_VGUI:
 		return
 
-	libs = [ 'sdk_includes' ]
+	libs = [ 'sdk_includes', 'werror' ]
 
 	# basic build: dedicated only, no dependencies
 	if bld.env.DEST_OS != 'win32':
