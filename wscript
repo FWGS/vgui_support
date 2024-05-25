@@ -13,7 +13,7 @@ def options(opt):
 	grp = opt.add_option_group('VGUI options')
 
 	grp.add_option('--disable-vgui', action = 'store_true', dest = 'NO_VGUI', default = False,
-		help = 'disable vgui_support [default: %default]')
+		help = 'disable vgui_support [default: %(default)s]')
 
 	opt.load('vgui')
 
