@@ -45,7 +45,6 @@ def build(bld):
 	bld.shlib(
 		source   = source,
 		target   = 'vgui_support',
-		features = 'cxx',
 		includes = includes,
 		use      = libs,
 		rpath    = bld.env.DEFAULT_RPATH,
