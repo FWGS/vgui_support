@@ -204,7 +204,7 @@ void CEngineSurface :: drawSetTextFont( Font *font )
 
 			for( int i = 0; i < 256; i++ )
 			{
-				int abcA, abcB, abcC;
+				int abcA = 0, abcB = 0, abcC = 0;
 				staticFont->getCharABCwide( i, abcA, abcB, abcC );
 
 				int wide = abcB;
@@ -336,7 +336,7 @@ void CEngineSurface :: drawPrintText( const char* text, int textLen )
 			continue;
 		}
 
-		int abcA, abcB, abcC;
+		int abcA = 0, abcB = 0, abcC = 0;
 
 		staticFont->getCharABCwide( curCh, abcA, abcB, abcC );
 
