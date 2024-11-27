@@ -48,6 +48,5 @@ def build(bld):
 		includes = includes,
 		use      = libs,
 		rpath    = bld.env.DEFAULT_RPATH,
-		install_path = bld.env.LIBDIR,
-		subsystem = bld.env.MSVC_SUBSYSTEM
+		install_path = bld.env.LIBDIR
 	)
