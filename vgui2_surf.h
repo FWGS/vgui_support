@@ -134,6 +134,13 @@ public:
 	void CreateBrowser( vgui2::VPANEL panel, IHTMLResponses *pBrowser, bool bPopupWindow, const char *pchUserAgentIdentifier ) override;
 	void RemoveBrowser( vgui2::VPANEL panel, IHTMLResponses *pBrowser ) override;
 	IHTMLChromeController *AccessChromeHTMLController() override;
+	void DrawTexturedRectAdd( int x0, int y0, int x1, int y1 ) override;
+	void SetSupportsEsc( bool bSupportsEsc ) override;
+	int GetFontBlur( vgui2::HFont font ) override;
+	bool IsAdditive( vgui2::HFont font ) override;
+	void SetProportionalBase( int width, int height ) override;
+	void GetHDProportionalBase( int &width, int &height ) override;
+	void SetHDProportionalBase( int nWidth, int nHeight ) override;
 
 	VGUI2Surface();
 	void Init( vgui2::VPANEL _embeddedPanel, IHTMLChromeController *pChromeController );
