@@ -804,3 +804,49 @@ void VGUI2Surface::InternalSolveTraverse( vgui2::VPANEL panel )
 			InternalSolveTraverse( child );
 	}
 }
+
+void VGUI2Surface::DrawTexturedRectAdd( int x0, int y0, int x1, int y1 )
+{
+	// TODO: Implement additive textured rectangle drawing
+	// This is similar to DrawTexturedRect but with additive blending
+}
+
+void VGUI2Surface::SetSupportsEsc( bool bSupportsEsc )
+{
+	// TODO: Implement ESC key support setting
+	// This controls whether the surface supports ESC key handling
+}
+
+int VGUI2Surface::GetFontBlur( vgui2::HFont font )
+{
+	// TODO: Implement font blur retrieval
+	// This should return the blur value for the given font
+	return 0; // Default no blur
+}
+
+bool VGUI2Surface::IsAdditive( vgui2::HFont font )
+{
+	// TODO: Implement additive font check
+	// This should return whether the font uses additive blending
+	return false; // Default non-additive
+}
+
+void VGUI2Surface::SetProportionalBase( int width, int height )
+{
+	// TODO: Implement proportional base setting
+	// This sets the base resolution for proportional scaling
+}
+
+void VGUI2Surface::GetHDProportionalBase( int &width, int &height )
+{
+	// TODO: Implement HD proportional base retrieval
+	// This gets the HD base resolution for proportional scaling
+	width = 1920;  // Default HD width
+	height = 1080; // Default HD height
+}
+
+void VGUI2Surface::SetHDProportionalBase( int nWidth, int nHeight )
+{
+	// TODO: Implement HD proportional base setting
+	// This sets the HD base resolution for proportional scaling
+}
