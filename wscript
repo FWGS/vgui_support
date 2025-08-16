@@ -9,6 +9,7 @@ def configure(conf):
 	conf.load('vgui')
 	conf.env.NO_VGUI = not conf.check_vgui()
 
+
 def build(bld):
 	if bld.env.NO_VGUI:
 		return
@@ -21,3 +22,5 @@ def build(bld):
 		rpath    = bld.env.DEFAULT_RPATH,
 		install_path = bld.env.LIBDIR
 	)
+
+	bld.install_files(bld.env.LIBDIR, bld.path.ant_glob("vgui-dev/lib/vgui.*") )
