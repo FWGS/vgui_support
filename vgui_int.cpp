@@ -23,17 +23,28 @@ from your version.
 
 */
 
+#include <cmath>
+#include <cstdio>
+
 #include "vgui_main.h"
 #include "xash3d_types.h"
 namespace vgui_support {
 
 vguiapi_t *g_api;
-
-Panel	*rootpanel = NULL;
 CEngineSurface	*surface = NULL;
-CEngineApp          staticApp;
 
-void VGui_Startup( int width, int height )
+// initialize VGUI::App as external (part of engine)
+class CEngineApp : public App
+{
+public:
+	CEngineApp( bool externalMain = true ) : App( externalMain ) { }
+	virtual void main( int argc, char* argv[] ) { } // stub
+};
+
+static Panel *rootpanel = NULL;
+static CEngineApp staticApp;
+
+static void VGui_Startup( int width, int height )
 {
 	if( rootpanel )
 	{
@@ -61,7 +72,7 @@ void VGui_Startup( int width, int height )
 	g_api->DrawInit ();
 }
 
-void VGui_Shutdown( void )
+static void VGui_Shutdown( void )
 {
 	staticApp.stop();
 
@@ -72,7 +83,7 @@ void VGui_Shutdown( void )
 	surface = NULL;
 }
 
-void VGui_Paint( void )
+static void VGui_Paint( void )
 {
 	int w, h;
 
@@ -94,12 +105,12 @@ void VGui_Paint( void )
 	pVPanel->setBounds( 0, 0, w, h );
 	pVPanel->repaint();
 
-	// paint everything 
+	// paint everything
 	pVPanel->paintTraverse();
 
 	EnableScissor( false );
 }
-void *VGui_GetPanel( void )
+static void *VGui_GetPanel( void )
 {
 	return (void *)rootpanel;
 }

@@ -124,19 +124,9 @@ protected:
 	friend class Panel;
 };
 
-// initialize VGUI::App as external (part of engine)
-class CEngineApp : public App
-{
-public:
-	CEngineApp( bool externalMain = true ) : App( externalMain ) { }
-	virtual void main( int argc, char* argv[] ) { } // stub
-};
-
 //
 // vgui_input.cpp
 //
-void *VGui_GetPanel( void );
-void VGui_Paint( void );
 void VGUI_Mouse(VGUI_MouseAction action, int code);
 void VGUI_Key(VGUI_KeyAction action, VGUI_KeyCode code);
 void VGUI_MouseMove(int x, int y);
@@ -149,8 +139,9 @@ void EnableScissor( qboolean enable );
 void SetScissorRect( int left, int top, int right, int bottom );
 qboolean ClipRect( const vpoint_t &inUL, const vpoint_t &inLR, vpoint_t *pOutUL, vpoint_t *pOutLR );
 
-extern CEngineSurface	*surface;
-extern Panel *root;
+extern CEngineSurface *surface;
+
 }
+
 using namespace vgui_support;
 #endif//VGUI_MAIN_H
