@@ -44,11 +44,52 @@ public:
 static Panel *rootpanel = NULL;
 static CEngineApp staticApp;
 
-static void VGui_Startup( int width, int height )
+static void VGui_ResizePanel_r( Panel *panel, double width_factor, double height_factor )
+{
+	int x, y, w, h;
+
+	for( int i = 0; i < panel->getChildCount(); i++ )
+	{
+		VGui_ResizePanel_r( panel->getChild( i ), width_factor, height_factor );
+	}
+
+	panel->invalidateLayout( false );
+
+	panel->getSize( w, h );
+	panel->getPos( x, y );
+
+	x = round( x * width_factor );
+	w = round( w * width_factor );
+	y = round( y * height_factor );
+	h = round( h * height_factor );
+
+	panel->setSize( w, h );
+	panel->setPos( x, y );
+}
+
+static void VGui_Resize( int width, int height )
+{
+	int oldwidth, oldheight;
+	double width_factor, height_factor;
+
+	rootpanel->getSize( oldwidth, oldheight );
+
+	width_factor = width / (double)oldwidth;
+	height_factor = height / (double)oldheight;
+
+	for( int i = 0; i < rootpanel->getChildCount(); i++ )
+		VGui_ResizePanel_r( rootpanel->getChild( i ), width_factor, height_factor );
+
+	rootpanel->setSize( width, height );
+
+	rootpanel->solveTraverse();
+}
+
+void VGui_Startup( int width, int height )
 {
 	if( rootpanel )
 	{
-		rootpanel->setSize( width, height );
+		VGui_Resize( width, height );
 		return;
 	}
 
