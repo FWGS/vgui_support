@@ -57,7 +57,7 @@ static void VGui_Startup( int width, int height )
 	rootpanel->setPaintBorderEnabled( false );
 	rootpanel->setPaintBackgroundEnabled( false );
 	rootpanel->setVisible( true );
-	rootpanel->setCursor( new Cursor( Cursor::dc_none ));
+	rootpanel->setCursor( new Cursor( Cursor::DC_NONE ));
 
 	staticApp.start();
 	staticApp.setMinimumTickMillisInterval( 0 );

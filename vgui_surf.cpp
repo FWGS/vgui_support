@@ -67,7 +67,7 @@ CEngineSurface :: CEngineSurface( Panel *embeddedPanel ):SurfaceBase( embeddedPa
 	//_surfaceExtents[3] = menu.globals->scrHeight;
 	embeddedPanel->getSize(_surfaceExtents[2], _surfaceExtents[3]);
 	_drawTextPos[0] = _drawTextPos[1] = 0;
-	_hCurrentCursor = null;
+	_hCurrentCursor = NULL;
 
 	staticFont = NULL;
 	staticFontInfo = NULL;

@@ -35,15 +35,13 @@ from your version.
 
 #include "vgui_api.h"
 
-#include<VGUI.h>
-#include<VGUI_App.h>
-#include<VGUI_Font.h>
-#include<VGUI_Panel.h>
-#include<VGUI_Cursor.h>
-#include<VGUI_SurfaceBase.h>
-#include<VGUI_InputSignal.h>
-#include<VGUI_MouseCode.h>
-#include<VGUI_KeyCode.h>
+#include <vgui.h>
+#include <app.h>
+#include <font.h>
+#include <panel.h>
+#include <input.h>
+#include <surface.h>
+#include <signals.h>
 
 #include "xash3d_types.h"
 
